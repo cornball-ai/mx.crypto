@@ -1,0 +1,9 @@
+mx.encrypt
+Copyright 2026 cornball.ai
+
+This product includes software developed at the Matrix.org Foundation
+C.I.C. (vodozemac, https://github.com/matrix-org/vodozemac), licensed
+under the Apache License, Version 2.0.
+
+Other vendored Rust crates retain their respective licenses; see
+inst/AUTHORS for attribution.

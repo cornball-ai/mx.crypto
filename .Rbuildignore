@@ -1,0 +1,14 @@
+^\.Rproj\.user$
+^.*\.Rproj$
+^\.claude$
+^CLAUDE\.md$
+^\.git$
+^\.github$
+^\.gitignore$
+^\.Rhistory$
+^cran-comments\.md$
+^src/rust/target$
+^src/rust/vendor$
+^src/rust/\.cargo$
+^src/rust/\.cargo-home$
+^src/rust/Cargo\.lock$

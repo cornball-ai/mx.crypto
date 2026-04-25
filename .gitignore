@@ -1,0 +1,31 @@
+# R
+.Rhistory
+.Rapp.history
+.RData
+*-Ex.R
+/*.tar.gz
+/*.Rcheck/
+.Rproj.user/
+*.utf8.md
+*.knit.md
+
+# Compiled
+*.o
+*.so
+*.dylib
+*.dll
+*.a
+*.lib
+
+# Rust
+src/rust/target/
+src/rust/vendor/
+src/rust/.cargo/
+src/rust/.cargo-home/
+src/rust/roxido.txt
+src/Makevars
+src/Makevars.win
+
+# Generated R
+R/roxido.R
+inst/cargo.log
