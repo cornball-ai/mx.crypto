@@ -1,4 +1,4 @@
-// mx.encrypt: Olm + Megolm primitives wrapping vodozemac for R.
+// mx.crypto: Olm + Megolm primitives wrapping vodozemac for R.
 //
 // Stateful objects (Account, Session, GroupSession, InboundGroupSession)
 // are returned to R as externalptr SEXPs; R's finalizer drops the boxed
@@ -18,10 +18,10 @@ use vodozemac::olm::{
 };
 use vodozemac::Curve25519PublicKey;
 
-const TAG_ACCOUNT: &str = "mx.encrypt::Account";
-const TAG_OLM_SESSION: &str = "mx.encrypt::OlmSession";
-const TAG_GROUP_SESSION: &str = "mx.encrypt::GroupSession";
-const TAG_INBOUND_GROUP_SESSION: &str = "mx.encrypt::InboundGroupSession";
+const TAG_ACCOUNT: &str = "mx.crypto::Account";
+const TAG_OLM_SESSION: &str = "mx.crypto::OlmSession";
+const TAG_GROUP_SESSION: &str = "mx.crypto::GroupSession";
+const TAG_INBOUND_GROUP_SESSION: &str = "mx.crypto::InboundGroupSession";
 
 // -- helpers -----------------------------------------------------------
 
@@ -50,13 +50,13 @@ fn b64_to_curve25519(s: &str) -> Curve25519PublicKey {
 // -- Account -----------------------------------------------------------
 
 #[roxido]
-fn mxe_account_new() {
+fn mxc_account_new() {
     let acct = Account::new();
     RExternalPtr::encode(acct, TAG_ACCOUNT, pc)
 }
 
 #[roxido]
-fn mxe_account_identity_keys(account: &RObject) {
+fn mxc_account_identity_keys(account: &RObject) {
     let ext = account.as_external_ptr().stop_str("expected externalptr");
     let acct: &Account = ext.decode_ref();
     let ids = acct.identity_keys();
@@ -69,7 +69,7 @@ fn mxe_account_identity_keys(account: &RObject) {
 }
 
 #[roxido]
-fn mxe_account_sign(account: &RObject, canonical_json: &str) {
+fn mxc_account_sign(account: &RObject, canonical_json: &str) {
     let ext = account.as_external_ptr().stop_str("expected externalptr");
     let acct: &Account = ext.decode_ref();
     let sig = acct.sign(canonical_json).to_base64();
@@ -77,7 +77,7 @@ fn mxe_account_sign(account: &RObject, canonical_json: &str) {
 }
 
 #[roxido]
-fn mxe_account_generate_one_time_keys(account: &mut RObject, n: usize) {
+fn mxc_account_generate_one_time_keys(account: &mut RObject, n: usize) {
     let ext = account
         .as_external_ptr_mut()
         .stop_str("expected externalptr");
@@ -86,7 +86,7 @@ fn mxe_account_generate_one_time_keys(account: &mut RObject, n: usize) {
 }
 
 #[roxido]
-fn mxe_account_one_time_keys(account: &RObject) {
+fn mxc_account_one_time_keys(account: &RObject) {
     let ext = account.as_external_ptr().stop_str("expected externalptr");
     let acct: &Account = ext.decode_ref();
     let keys = acct.one_time_keys();
@@ -105,7 +105,7 @@ fn mxe_account_one_time_keys(account: &RObject) {
 }
 
 #[roxido]
-fn mxe_account_mark_published(account: &mut RObject) {
+fn mxc_account_mark_published(account: &mut RObject) {
     let ext = account
         .as_external_ptr_mut()
         .stop_str("expected externalptr");
@@ -114,7 +114,7 @@ fn mxe_account_mark_published(account: &mut RObject) {
 }
 
 #[roxido]
-fn mxe_account_fallback_key(account: &mut RObject) {
+fn mxc_account_fallback_key(account: &mut RObject) {
     let ext = account
         .as_external_ptr_mut()
         .stop_str("expected externalptr");
@@ -134,7 +134,7 @@ fn mxe_account_fallback_key(account: &mut RObject) {
 }
 
 #[roxido]
-fn mxe_account_pickle(account: &RObject, key: &RObject) {
+fn mxc_account_pickle(account: &RObject, key: &RObject) {
     let ext = account.as_external_ptr().stop_str("expected externalptr");
     let acct: &Account = ext.decode_ref();
     let k = pickle_key_from(key);
@@ -143,7 +143,7 @@ fn mxe_account_pickle(account: &RObject, key: &RObject) {
 }
 
 #[roxido]
-fn mxe_account_unpickle(blob: &str, key: &RObject) {
+fn mxc_account_unpickle(blob: &str, key: &RObject) {
     let k = pickle_key_from(key);
     let pickle = AccountPickle::from_encrypted(blob, &k).stop_str("invalid account pickle");
     let acct = Account::from_pickle(pickle);
@@ -153,7 +153,7 @@ fn mxe_account_unpickle(blob: &str, key: &RObject) {
 // -- Olm sessions ------------------------------------------------------
 
 #[roxido]
-fn mxe_olm_create_outbound(account: &RObject, peer_curve25519: &str, peer_otk: &str) {
+fn mxc_olm_create_outbound(account: &RObject, peer_curve25519: &str, peer_otk: &str) {
     let ext = account.as_external_ptr().stop_str("expected externalptr");
     let acct: &Account = ext.decode_ref();
     let id_key = b64_to_curve25519(peer_curve25519);
@@ -163,7 +163,7 @@ fn mxe_olm_create_outbound(account: &RObject, peer_curve25519: &str, peer_otk: &
 }
 
 #[roxido]
-fn mxe_olm_create_inbound(account: &mut RObject, peer_curve25519: &str, prekey_b64: &str) {
+fn mxc_olm_create_inbound(account: &mut RObject, peer_curve25519: &str, prekey_b64: &str) {
     let ext = account
         .as_external_ptr_mut()
         .stop_str("expected externalptr");
@@ -186,7 +186,7 @@ fn mxe_olm_create_inbound(account: &mut RObject, peer_curve25519: &str, prekey_b
 }
 
 #[roxido]
-fn mxe_olm_encrypt(session: &mut RObject, plaintext: &RObject) {
+fn mxc_olm_encrypt(session: &mut RObject, plaintext: &RObject) {
     let ext = session
         .as_external_ptr_mut()
         .stop_str("expected externalptr");
@@ -201,7 +201,7 @@ fn mxe_olm_encrypt(session: &mut RObject, plaintext: &RObject) {
 }
 
 #[roxido]
-fn mxe_olm_decrypt(session: &mut RObject, message_type: i32, body: &str) {
+fn mxc_olm_decrypt(session: &mut RObject, message_type: i32, body: &str) {
     let ext = session
         .as_external_ptr_mut()
         .stop_str("expected externalptr");
@@ -212,7 +212,7 @@ fn mxe_olm_decrypt(session: &mut RObject, message_type: i32, body: &str) {
 }
 
 #[roxido]
-fn mxe_olm_session_pickle(session: &RObject, key: &RObject) {
+fn mxc_olm_session_pickle(session: &RObject, key: &RObject) {
     let ext = session.as_external_ptr().stop_str("expected externalptr");
     let sess: &Session = ext.decode_ref();
     let k = pickle_key_from(key);
@@ -221,7 +221,7 @@ fn mxe_olm_session_pickle(session: &RObject, key: &RObject) {
 }
 
 #[roxido]
-fn mxe_olm_session_unpickle(blob: &str, key: &RObject) {
+fn mxc_olm_session_unpickle(blob: &str, key: &RObject) {
     let k = pickle_key_from(key);
     let pickle = SessionPickle::from_encrypted(blob, &k).stop_str("invalid session pickle");
     let sess = Session::from_pickle(pickle);
@@ -231,13 +231,13 @@ fn mxe_olm_session_unpickle(blob: &str, key: &RObject) {
 // -- Megolm: outbound (sender) -----------------------------------------
 
 #[roxido]
-fn mxe_megolm_outbound_new() {
+fn mxc_megolm_outbound_new() {
     let gs = GroupSession::new(MegolmSessionConfig::version_1());
     RExternalPtr::encode(gs, TAG_GROUP_SESSION, pc)
 }
 
 #[roxido]
-fn mxe_megolm_outbound_info(gs: &RObject) {
+fn mxc_megolm_outbound_info(gs: &RObject) {
     let ext = gs.as_external_ptr().stop_str("expected externalptr");
     let g: &GroupSession = ext.decode_ref();
     let sid = g.session_id();
@@ -251,7 +251,7 @@ fn mxe_megolm_outbound_info(gs: &RObject) {
 }
 
 #[roxido]
-fn mxe_megolm_encrypt(gs: &mut RObject, plaintext: &RObject) {
+fn mxc_megolm_encrypt(gs: &mut RObject, plaintext: &RObject) {
     let ext = gs.as_external_ptr_mut().stop_str("expected externalptr");
     let g: &mut GroupSession = ext.decode_mut();
     let pt = raw_bytes(plaintext);
@@ -261,7 +261,7 @@ fn mxe_megolm_encrypt(gs: &mut RObject, plaintext: &RObject) {
 }
 
 #[roxido]
-fn mxe_megolm_outbound_pickle(gs: &RObject, key: &RObject) {
+fn mxc_megolm_outbound_pickle(gs: &RObject, key: &RObject) {
     let ext = gs.as_external_ptr().stop_str("expected externalptr");
     let g: &GroupSession = ext.decode_ref();
     let k = pickle_key_from(key);
@@ -270,7 +270,7 @@ fn mxe_megolm_outbound_pickle(gs: &RObject, key: &RObject) {
 }
 
 #[roxido]
-fn mxe_megolm_outbound_unpickle(blob: &str, key: &RObject) {
+fn mxc_megolm_outbound_unpickle(blob: &str, key: &RObject) {
     let k = pickle_key_from(key);
     let pickle =
         GroupSessionPickle::from_encrypted(blob, &k).stop_str("invalid group session pickle");
@@ -281,14 +281,14 @@ fn mxe_megolm_outbound_unpickle(blob: &str, key: &RObject) {
 // -- Megolm: inbound (receiver) ----------------------------------------
 
 #[roxido]
-fn mxe_megolm_inbound_new(session_key: &str) {
+fn mxc_megolm_inbound_new(session_key: &str) {
     let sk = SessionKey::from_base64(session_key).stop_str("invalid session_key base64");
     let igs = InboundGroupSession::new(&sk, MegolmSessionConfig::version_1());
     RExternalPtr::encode(igs, TAG_INBOUND_GROUP_SESSION, pc)
 }
 
 #[roxido]
-fn mxe_megolm_decrypt(igs: &mut RObject, ciphertext_b64: &str) {
+fn mxc_megolm_decrypt(igs: &mut RObject, ciphertext_b64: &str) {
     let ext = igs.as_external_ptr_mut().stop_str("expected externalptr");
     let g: &mut InboundGroupSession = ext.decode_mut();
     let msg = MegolmMessage::from_base64(ciphertext_b64).stop_str("invalid megolm ciphertext");
@@ -302,7 +302,7 @@ fn mxe_megolm_decrypt(igs: &mut RObject, ciphertext_b64: &str) {
 }
 
 #[roxido]
-fn mxe_megolm_inbound_pickle(igs: &RObject, key: &RObject) {
+fn mxc_megolm_inbound_pickle(igs: &RObject, key: &RObject) {
     let ext = igs.as_external_ptr().stop_str("expected externalptr");
     let g: &InboundGroupSession = ext.decode_ref();
     let k = pickle_key_from(key);
@@ -311,7 +311,7 @@ fn mxe_megolm_inbound_pickle(igs: &RObject, key: &RObject) {
 }
 
 #[roxido]
-fn mxe_megolm_inbound_unpickle(blob: &str, key: &RObject) {
+fn mxc_megolm_inbound_unpickle(blob: &str, key: &RObject) {
     let k = pickle_key_from(key);
     let pickle = InboundGroupSessionPickle::from_encrypted(blob, &k)
         .stop_str("invalid inbound group session pickle");

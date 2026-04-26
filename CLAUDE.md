@@ -1,4 +1,4 @@
-# mx.encrypt — local conventions
+# mx.crypto — local conventions
 
 R wrapper around the Rust `vodozemac` crate (Matrix Olm + Megolm) via
 dbdahl's cargo-framework / roxido. Crypto only — no HTTP, no JSON
@@ -26,7 +26,7 @@ R CMD INSTALL .
 
 # Tinyverse equivalents (preferred)
 r -e 'tinypkgr::install()'
-r -e 'tinytest::test_package("mx.encrypt")'
+r -e 'tinytest::test_package("mx.crypto")'
 
 # Re-vendor after Cargo.toml changes
 cd src/rust && cargo vendor && tar -cJf vendor.tar.xz vendor && rm -rf vendor
@@ -36,7 +36,7 @@ cd src/rust && cargo vendor && tar -cJf vendor.tar.xz vendor && rm -rf vendor
 
 Each `#[roxido]` Rust fn is callable from R as `.Call(.fnname, args)`
 once the package is built. The auto-generated `R/roxido.R` defines the
-`.fnname` symbols (via `useDynLib(mx.encrypt, .registration = TRUE)`).
+`.fnname` symbols (via `useDynLib(mx.crypto, .registration = TRUE)`).
 Hand-written wrappers in `R/account.R` etc. call those.
 
 ## CRAN gotchas inherited from salso's pattern

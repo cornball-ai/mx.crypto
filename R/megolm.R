@@ -1,15 +1,15 @@
 #' Create an outbound Megolm group session
 #'
-#' The sender side of a Megolm ratchet. Use [mxe_megolm_outbound_info]
+#' The sender side of a Megolm ratchet. Use [mxc_megolm_outbound_info]
 #' to read out the `session_key` that must be shared (over Olm) with
-#' each recipient device, and [mxe_megolm_encrypt] to encrypt room
+#' each recipient device, and [mxc_megolm_encrypt] to encrypt room
 #' messages. Rotate (create a new one) on membership changes or after
 #' your chosen number-of-messages / time threshold.
 #'
 #' @return An outbound GroupSession external pointer.
 #' @export
-mxe_megolm_outbound_new <- function() {
-  .Call(.mxe_megolm_outbound_new)
+mxc_megolm_outbound_new <- function() {
+  .Call(.mxc_megolm_outbound_new)
 }
 
 #' Inspect an outbound group session
@@ -21,8 +21,8 @@ mxe_megolm_outbound_new <- function() {
 #' @return Named list: `session_id` (str), `session_key` (str),
 #'   `message_index` (int).
 #' @export
-mxe_megolm_outbound_info <- function(gs) {
-  .Call(.mxe_megolm_outbound_info, gs)
+mxc_megolm_outbound_info <- function(gs) {
+  .Call(.mxc_megolm_outbound_info, gs)
 }
 
 #' Encrypt a room message
@@ -32,11 +32,11 @@ mxe_megolm_outbound_info <- function(gs) {
 #'   producing the canonical JSON event body.
 #' @return Base64 ciphertext (the `ciphertext` field of `m.room.encrypted`).
 #' @export
-mxe_megolm_encrypt <- function(gs, plaintext) {
+mxc_megolm_encrypt <- function(gs, plaintext) {
   if (!is.raw(plaintext)) {
     stop("'plaintext' must be a raw vector")
   }
-  .Call(.mxe_megolm_encrypt, gs, plaintext)
+  .Call(.mxc_megolm_encrypt, gs, plaintext)
 }
 
 #' Pickle an outbound group session
@@ -45,11 +45,11 @@ mxe_megolm_encrypt <- function(gs, plaintext) {
 #' @param key 32-byte raw vector.
 #' @return Base64 string.
 #' @export
-mxe_megolm_outbound_pickle <- function(gs, key) {
+mxc_megolm_outbound_pickle <- function(gs, key) {
   if (!is.raw(key) || length(key) != 32L) {
     stop("'key' must be a raw vector of length 32")
   }
-  .Call(.mxe_megolm_outbound_pickle, gs, key)
+  .Call(.mxc_megolm_outbound_pickle, gs, key)
 }
 
 #' Restore an outbound group session from a pickle
@@ -58,11 +58,11 @@ mxe_megolm_outbound_pickle <- function(gs, key) {
 #' @param key 32-byte raw vector.
 #' @return An outbound GroupSession external pointer.
 #' @export
-mxe_megolm_outbound_unpickle <- function(blob, key) {
+mxc_megolm_outbound_unpickle <- function(blob, key) {
   if (!is.raw(key) || length(key) != 32L) {
     stop("'key' must be a raw vector of length 32")
   }
-  .Call(.mxe_megolm_outbound_unpickle, as.character(blob), key)
+  .Call(.mxc_megolm_outbound_unpickle, as.character(blob), key)
 }
 
 #' Build an inbound Megolm session from a shared session_key
@@ -76,8 +76,8 @@ mxe_megolm_outbound_unpickle <- function(blob, key) {
 #' @param session_key Base64 session_key from `m.room_key`.
 #' @return An InboundGroupSession external pointer.
 #' @export
-mxe_megolm_inbound_new <- function(session_key) {
-  .Call(.mxe_megolm_inbound_new, as.character(session_key))
+mxc_megolm_inbound_new <- function(session_key) {
+  .Call(.mxc_megolm_inbound_new, as.character(session_key))
 }
 
 #' Decrypt a room message
@@ -88,8 +88,8 @@ mxe_megolm_inbound_new <- function(session_key) {
 #' @return Named list: `plaintext` (raw) and `message_index` (integer).
 #'   Use `message_index` to dedupe replays.
 #' @export
-mxe_megolm_decrypt <- function(igs, ciphertext_b64) {
-  .Call(.mxe_megolm_decrypt, igs, as.character(ciphertext_b64))
+mxc_megolm_decrypt <- function(igs, ciphertext_b64) {
+  .Call(.mxc_megolm_decrypt, igs, as.character(ciphertext_b64))
 }
 
 #' Pickle an inbound group session
@@ -100,11 +100,11 @@ mxe_megolm_decrypt <- function(igs, ciphertext_b64) {
 #' @param key 32-byte raw vector.
 #' @return Base64 string.
 #' @export
-mxe_megolm_inbound_pickle <- function(igs, key) {
+mxc_megolm_inbound_pickle <- function(igs, key) {
   if (!is.raw(key) || length(key) != 32L) {
     stop("'key' must be a raw vector of length 32")
   }
-  .Call(.mxe_megolm_inbound_pickle, igs, key)
+  .Call(.mxc_megolm_inbound_pickle, igs, key)
 }
 
 #' Restore an inbound group session from a pickle
@@ -113,9 +113,9 @@ mxe_megolm_inbound_pickle <- function(igs, key) {
 #' @param key 32-byte raw vector.
 #' @return An InboundGroupSession external pointer.
 #' @export
-mxe_megolm_inbound_unpickle <- function(blob, key) {
+mxc_megolm_inbound_unpickle <- function(blob, key) {
   if (!is.raw(key) || length(key) != 32L) {
     stop("'key' must be a raw vector of length 32")
   }
-  .Call(.mxe_megolm_inbound_unpickle, as.character(blob), key)
+  .Call(.mxc_megolm_inbound_unpickle, as.character(blob), key)
 }

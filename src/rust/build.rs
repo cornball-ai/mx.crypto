@@ -64,7 +64,7 @@ fn make_registration_code(src_path: &Path) -> Option<String> {
                 let _ = fs::write("../../R/roxido.R", &buffer);
                 let mut snippet = String::new();
                 // R substitutes '_' for '.' in init symbol names, so a
-                // package called "mx.encrypt" looks for R_init_mx_encrypt.
+                // package called "mx.crypto" looks for R_init_mx_crypto.
                 let init_symbol = package_name.replace('.', "_");
                 snippet.push_str(&format!(
                     r#"use roxido::*;

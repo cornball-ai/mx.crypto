@@ -1,4 +1,4 @@
-Package: mx.encrypt
+Package: mx.crypto
 Type: Package
 Title: Matrix End-to-End Encryption Primitives
 Version: 0.1.0
@@ -18,8 +18,8 @@ Description: Olm and Megolm cryptographic ratchet primitives for the
     management, 1:1 'Olm' sessions, and 'Megolm' group sessions. Pairs
     with the 'mx.api' package, which handles 'Matrix' HTTP transport.
 License: MIT + file LICENSE | Apache License 2.0
-URL: https://github.com/cornball-ai/mx.encrypt
-BugReports: https://github.com/cornball-ai/mx.encrypt/issues
+URL: https://github.com/cornball-ai/mx.crypto
+BugReports: https://github.com/cornball-ai/mx.crypto/issues
 Depends: R (>= 4.3)
 SystemRequirements: Cargo (Rust's package manager), rustc (>= 1.85)
 Suggests: tinytest

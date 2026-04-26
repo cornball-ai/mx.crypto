@@ -1,4 +1,4 @@
-mx.encrypt bundles the following Rust crates as static dependencies.
+mx.crypto bundles the following Rust crates as static dependencies.
 Each crate retains its original license; this file lists the upstream
 authors. The full text of each license is preserved in the vendored
 source under src/rust/vendor.tar.xz.

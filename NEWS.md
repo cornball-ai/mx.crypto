@@ -1,4 +1,4 @@
-# mx.encrypt 0.1.0
+# mx.crypto 0.1.0
 
 * Initial release.
 * Wraps the 'vodozemac' Rust crate (Matrix.org) for Olm + Megolm.
