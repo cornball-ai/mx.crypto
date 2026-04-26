@@ -7,4 +7,5 @@
 #'
 #' @name mx.crypto-package
 #' @aliases mx.crypto
+#' @useDynLib mx.crypto, .registration = TRUE
 "_PACKAGE"

@@ -50,17 +50,10 @@ fn make_registration_code(src_path: &Path) -> Option<String> {
                     buffer.push_str(&line_for_r);
                     buffer.push_str(")\n");
                 }
-                buffer.push_str(
-                    r#"
-#' @keywords internal
-#' @usage NULL
-#' @useDynLib "#,
-                );
-                buffer.push_str(&package_name);
-                buffer.push_str(
-                    r#", .registration = TRUE
-"_PACKAGE""#,
-                );
+                // Note: salso emits a `_PACKAGE` roxygen block here.
+                // We skip it because R/mx.crypto-package.R already owns
+                // the package-level docs, and NAMESPACE has useDynLib
+                // statically. Two _PACKAGE blocks confuse tinyrox.
                 let _ = fs::write("../../R/roxido.R", &buffer);
                 let mut snippet = String::new();
                 // R substitutes '_' for '.' in init symbol names, so a
