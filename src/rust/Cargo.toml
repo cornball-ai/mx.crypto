@@ -16,3 +16,4 @@ lto = "thin"
 [dependencies]
 roxido = { path = "roxido" }
 vodozemac = "0.10"
+base64 = "0.22"

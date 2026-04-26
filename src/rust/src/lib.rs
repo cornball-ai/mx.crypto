@@ -9,6 +9,7 @@
 roxido_registration!();
 use roxido::*;
 
+use base64::{Engine as _, engine::general_purpose::STANDARD as B64};
 use vodozemac::megolm::{
     GroupSession, GroupSessionPickle, InboundGroupSession, InboundGroupSessionPickle,
     MegolmMessage, SessionConfig as MegolmSessionConfig, SessionKey,
@@ -158,7 +159,7 @@ fn mxc_olm_create_outbound(account: &RObject, peer_curve25519: &str, peer_otk: &
     let acct: &Account = ext.decode_ref();
     let id_key = b64_to_curve25519(peer_curve25519);
     let otk = b64_to_curve25519(peer_otk);
-    let sess = acct.create_outbound_session(SessionConfig::version_2(), id_key, otk);
+    let sess = acct.create_outbound_session(SessionConfig::version_1(), id_key, otk);
     RExternalPtr::encode(sess, TAG_OLM_SESSION, pc)
 }
 
@@ -169,13 +170,16 @@ fn mxc_olm_create_inbound(account: &mut RObject, peer_curve25519: &str, prekey_b
         .stop_str("expected externalptr");
     let acct: &mut Account = ext.decode_mut();
     let id_key = b64_to_curve25519(peer_curve25519);
-    let msg = OlmMessage::from_parts(0, prekey_b64).stop_str("invalid prekey message");
+    let body_bytes = B64
+        .decode(prekey_b64)
+        .stop_str("prekey body is not valid base64");
+    let msg = OlmMessage::from_parts(0, &body_bytes).stop_str("invalid prekey message");
     let prekey = match msg {
         OlmMessage::PreKey(m) => m,
         OlmMessage::Normal(_) => stop!("expected pre-key olm message (type 0)"),
     };
     let result = acct
-        .create_inbound_session(id_key, &prekey)
+        .create_inbound_session(SessionConfig::version_1(), id_key, &prekey)
         .stop_str("create_inbound_session failed");
     let session_ptr = RExternalPtr::encode(result.session, TAG_OLM_SESSION, pc);
     let plaintext_vec = (&result.plaintext[..]).to_r(pc);
@@ -192,11 +196,12 @@ fn mxc_olm_encrypt(session: &mut RObject, plaintext: &RObject) {
         .stop_str("expected externalptr");
     let sess: &mut Session = ext.decode_mut();
     let pt = raw_bytes(plaintext);
-    let msg = sess.encrypt(pt);
-    let (mtype, body) = msg.to_parts();
+    let msg = sess.encrypt(pt).stop_str("olm encrypt failed");
+    let (mtype, body_bytes) = msg.to_parts();
+    let body_b64 = B64.encode(&body_bytes);
     let out = RList::with_names(&["type", "body"], pc);
     out.set(0, (mtype as i32).to_r(pc)).stop();
-    out.set(1, body.as_str().to_r(pc)).stop();
+    out.set(1, body_b64.as_str().to_r(pc)).stop();
     out
 }
 
@@ -206,7 +211,11 @@ fn mxc_olm_decrypt(session: &mut RObject, message_type: i32, body: &str) {
         .as_external_ptr_mut()
         .stop_str("expected externalptr");
     let sess: &mut Session = ext.decode_mut();
-    let msg = OlmMessage::from_parts(message_type as usize, body).stop_str("invalid olm message");
+    let body_bytes = B64
+        .decode(body)
+        .stop_str("olm body is not valid base64");
+    let msg = OlmMessage::from_parts(message_type as usize, &body_bytes)
+        .stop_str("invalid olm message");
     let pt = sess.decrypt(&msg).stop_str("olm decrypt failed");
     (&pt[..]).to_r(pc)
 }

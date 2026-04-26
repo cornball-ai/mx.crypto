@@ -11,4 +11,3 @@
 ^src/rust/vendor$
 ^src/rust/\.cargo$
 ^src/rust/\.cargo-home$
-^src/rust/Cargo\.lock$
