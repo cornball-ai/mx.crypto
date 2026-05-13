@@ -18,6 +18,8 @@ use vodozemac::olm::{
     Account, AccountPickle, OlmMessage, Session, SessionConfig, SessionPickle,
 };
 use vodozemac::Curve25519PublicKey;
+use vodozemac::Ed25519PublicKey;
+use vodozemac::Ed25519Signature;
 
 const TAG_ACCOUNT: &str = "mx.crypto::Account";
 const TAG_OLM_SESSION: &str = "mx.crypto::OlmSession";
@@ -159,7 +161,12 @@ fn mxc_olm_create_outbound(account: &RObject, peer_curve25519: &str, peer_otk: &
     let acct: &Account = ext.decode_ref();
     let id_key = b64_to_curve25519(peer_curve25519);
     let otk = b64_to_curve25519(peer_otk);
-    let sess = acct.create_outbound_session(SessionConfig::version_1(), id_key, otk);
+    let sess = acct
+        .create_outbound_session(SessionConfig::version_1(), id_key, otk)
+        .stop_str(
+            "create_outbound_session failed (e.g. non-contributory \
+             Diffie-Hellman key)",
+        );
     RExternalPtr::encode(sess, TAG_OLM_SESSION, pc)
 }
 
@@ -326,4 +333,23 @@ fn mxc_megolm_inbound_unpickle(blob: &str, key: &RObject) {
         .stop_str("invalid inbound group session pickle");
     let igs = InboundGroupSession::from_pickle(pickle);
     RExternalPtr::encode(igs, TAG_INBOUND_GROUP_SESSION, pc)
+}
+
+// -- Ed25519 signature verification ------------------------------------
+
+#[roxido]
+fn mxc_curve25519_is_valid(public_key_b64: &str) {
+    let ok = Curve25519PublicKey::from_base64(public_key_b64).is_ok();
+    ok.to_r(pc)
+}
+
+#[roxido]
+fn mxc_ed25519_verify(public_key_b64: &str, message: &RObject, signature_b64: &str) {
+    let pk = Ed25519PublicKey::from_base64(public_key_b64)
+        .stop_str("invalid ed25519 public key (base64)");
+    let sig = Ed25519Signature::from_base64(signature_b64)
+        .stop_str("invalid ed25519 signature (base64 / length)");
+    let msg = raw_bytes(message);
+    let ok = pk.verify(msg, &sig).is_ok();
+    ok.to_r(pc)
 }

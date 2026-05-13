@@ -14,8 +14,6 @@ identity keys and a one-time-key pool. The returned object is an
 external pointer; persist it with [mxc_account_pickle].
 }
 \examples{
-\dontrun{
 acct <- mxc_account_new()
 mxc_account_identity_keys(acct)
-}
 }
