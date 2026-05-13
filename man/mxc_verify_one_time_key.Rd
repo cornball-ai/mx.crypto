@@ -3,10 +3,15 @@
 \alias{mxc_verify_one_time_key}
 \title{Verify a signed one-time / fallback key}
 \usage{
-mxc_verify_one_time_key(key_object, signing_ed25519, expected_user_id,
-                        expected_device_id)
+mxc_verify_one_time_key(algorithm_key_id, key_object, signing_ed25519,
+                        expected_user_id, expected_device_id)
 }
 \arguments{
+\item{algorithm_key_id}{Character. The outer map key from the
+\code{one_time_keys} or \code{fallback_keys} response, e.g.
+\code{"signed_curve25519:AAAAAAAAAAA"}. The algorithm prefix
+must be \code{signed_curve25519}.}
+
 \item{key_object}{Named list. The signed key object (must contain
 \code{key} and \code{signatures}).}
 
@@ -30,13 +35,21 @@ block of \code{/keys/upload}). The signing ed25519 key must come
 from a previously verified \code{device_keys} object —
 \emph{this function does not look it up for you}, because doing so
 would silently re-trust whatever the homeserver hands back.
+The caller must pass the outer map key (\code{"<algorithm>:<key_id>"})
+alongside the inner key object so the helper can reject anything but
+\code{signed_curve25519}. The helper also confirms the \code{key}
+value decodes to a 32-byte curve25519 public key; a signature over
+garbage bytes is not a useful "verified" result.
 }
 \examples{
 \dontrun{
 cl <- mx.api::mx_keys_claim(s, list(
   "@alice:server" = list("ALICEDEV" = "signed_curve25519")
 ))
-obj <- cl$one_time_keys[["@alice:server"]][["ALICEDEV"]][[1]]
-otk <- mxc_verify_one_time_key(obj, alice_ed, "@alice:server", "ALICEDEV")
+entry <- cl$one_time_keys[["@alice:server"]][["ALICEDEV"]]
+algo_kid <- names(entry)[[1]]   # e.g. "signed_curve25519:AAAA"
+otk <- mxc_verify_one_time_key(
+  algo_kid, entry[[1]], alice_ed, "@alice:server", "ALICEDEV"
+)
 }
 }

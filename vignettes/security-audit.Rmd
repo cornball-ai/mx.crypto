@@ -293,19 +293,39 @@ must raise:
 |---|---|
 | Wrong `expected_user_id` | "user_id mismatch" |
 | Wrong `expected_device_id` | "device_id mismatch" |
+| `algorithms` absent | "missing 'algorithms'" |
+| `algorithms` present but missing `m.olm.v1.curve25519-aes-sha2` | "missing required entries" |
+| `algorithms` empty list | "non-empty" |
 | `keys` missing `curve25519:<dev>` | "missing curve25519" |
 | `keys` missing `ed25519:<dev>` | "missing ed25519" |
 | `signatures` block absent | "unsigned" |
 | Signature only under attacker's user_id | "no signatures from" |
 | Signature attached under `ed25519:OTHERDEV` | "no ed25519:ALICEDEV signature" |
 | `keys.curve25519` swapped for another device's | "did not verify" |
+| OTK outer key uses `curve25519:` instead of `signed_curve25519:` | "does not start with" |
+| OTK outer key uses `signed_ed25519:` | "does not start with" |
+| OTK outer key empty / NA | "non-empty" |
 | OTK signed by attacker's ed25519 | "did not verify" |
 | OTK missing `key` | "missing 'key'" |
 | OTK unsigned | "unsigned" |
 | OTK `key` field tampered with | "did not verify" |
+| OTK `key` validly signed but not a 32-byte curve25519 key | "valid curve25519 public key" |
 
-The full test suite is 25 assertions and lives in
-`inst/tinytest/test_verify.R`.
+The full test suite is 34 assertions and lives in
+`inst/tinytest/test_verify.R`. Two design choices worth flagging:
+
+- `mxc_verify_device_keys()` validates `algorithms` against a
+  caller-supplied required list (default: both Olm + Megolm). The
+  default forces an explicit opt-in if you want to accept a device
+  that advertises neither algorithm — there is no scenario in our
+  current callers where that should silently pass.
+- `mxc_verify_one_time_key()` takes the outer
+  `"<algorithm>:<key_id>"` map key as a first argument so it can
+  reject anything but `signed_curve25519`, and it decodes the
+  `key` value through vodozemac's
+  `Curve25519PublicKey::from_base64` (via the new internal
+  `mxc_curve25519_is_valid` binding) so a signed-but-malformed key
+  cannot pass.
 
 ### What this does NOT cover
 
@@ -393,7 +413,7 @@ Build + test results from this audit branch:
 
 | Check | Result |
 |---|---|
-| `tinytest::test_package("mx.crypto")` | 22 + 18 + 11 + 25 = 76 assertions, all pass |
+| `tinytest::test_package("mx.crypto")` | 22 + 18 + 11 + 34 = 85 assertions, all pass |
 | `tinypkgr::check()` | 0 errors, 0 warnings (1 standard "new submission" note retained) |
 | Live homeserver e2e demo | Decrypted plaintext round-trips through 4 share targets (FluffyChat verified) |
 | Zero-curve25519 regression | Errors cleanly with `"non-contributory"` message |

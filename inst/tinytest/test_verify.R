@@ -160,12 +160,45 @@ if (requireNamespace("mx.api", quietly = TRUE)) {
     pattern = "no ed25519:ALICEDEV signature"
   )
 
+  # algorithms: missing entirely
+  bad <- dk_ok
+  bad$algorithms <- NULL
+  expect_error(
+    mxc_verify_device_keys(bad, "@alice:example.org", "ALICEDEV"),
+    pattern = "missing 'algorithms'"
+  )
+
+  # algorithms: present but missing the required Olm algorithm
+  bad <- dk_ok
+  bad$algorithms <- list("m.megolm.v1.aes-sha2")  # no olm
+  expect_error(
+    mxc_verify_device_keys(bad, "@alice:example.org", "ALICEDEV"),
+    pattern = "missing required entries.*m\\.olm"
+  )
+
+  # algorithms: empty list
+  bad <- dk_ok
+  bad$algorithms <- list()
+  expect_error(
+    mxc_verify_device_keys(bad, "@alice:example.org", "ALICEDEV"),
+    pattern = "non-empty"
+  )
+
+  # algorithms: opt out via required_algorithms = character(0) still passes
+  bad <- dk_ok
+  bad$algorithms <- NULL
+  expect_silent(mxc_verify_device_keys(
+    dk_ok, "@alice:example.org", "ALICEDEV",
+    required_algorithms = character(0)
+  ))
+
   # ==========================================================================
   # mxc_verify_one_time_key — happy path + every rejection branch
   # ==========================================================================
 
   mxc_account_generate_one_time_keys(alice, 1L)
   otks <- mxc_account_one_time_keys(alice)
+  otk_kid <- names(otks)[[1L]]
   otk_key <- otks[[1L]]
   unsigned_otk <- list(key = otk_key)
   s <- mxc_account_sign(alice, mx.api::mx_canonical_json(unsigned_otk))
@@ -176,10 +209,12 @@ if (requireNamespace("mx.api", quietly = TRUE)) {
       "@alice:example.org"
     )
   )
+  algo_kid_ok <- paste0("signed_curve25519:", otk_kid)
 
   # Happy path
   verified <- mxc_verify_one_time_key(
-    otk_ok, alice_ids$ed25519, "@alice:example.org", "ALICEDEV"
+    algo_kid_ok, otk_ok, alice_ids$ed25519,
+    "@alice:example.org", "ALICEDEV"
   )
   expect_equal(verified, otk_key)
 
@@ -187,7 +222,8 @@ if (requireNamespace("mx.api", quietly = TRUE)) {
   mallory_ids <- mxc_account_identity_keys(mallory)
   expect_error(
     mxc_verify_one_time_key(
-      otk_ok, mallory_ids$ed25519, "@alice:example.org", "ALICEDEV"
+      algo_kid_ok, otk_ok, mallory_ids$ed25519,
+      "@alice:example.org", "ALICEDEV"
     ),
     pattern = "did not verify"
   )
@@ -197,7 +233,8 @@ if (requireNamespace("mx.api", quietly = TRUE)) {
   bad$key <- NULL
   expect_error(
     mxc_verify_one_time_key(
-      bad, alice_ids$ed25519, "@alice:example.org", "ALICEDEV"
+      algo_kid_ok, bad, alice_ids$ed25519,
+      "@alice:example.org", "ALICEDEV"
     ),
     pattern = "missing 'key'"
   )
@@ -207,7 +244,8 @@ if (requireNamespace("mx.api", quietly = TRUE)) {
   bad$signatures <- NULL
   expect_error(
     mxc_verify_one_time_key(
-      bad, alice_ids$ed25519, "@alice:example.org", "ALICEDEV"
+      algo_kid_ok, bad, alice_ids$ed25519,
+      "@alice:example.org", "ALICEDEV"
     ),
     pattern = "unsigned"
   )
@@ -217,7 +255,8 @@ if (requireNamespace("mx.api", quietly = TRUE)) {
   bad$signatures <- setNames(bad$signatures, "@mallory:example.org")
   expect_error(
     mxc_verify_one_time_key(
-      bad, alice_ids$ed25519, "@alice:example.org", "ALICEDEV"
+      algo_kid_ok, bad, alice_ids$ed25519,
+      "@alice:example.org", "ALICEDEV"
     ),
     pattern = "no signatures from"
   )
@@ -227,8 +266,60 @@ if (requireNamespace("mx.api", quietly = TRUE)) {
   bad$key <- mxc_account_identity_keys(mxc_account_new())$curve25519
   expect_error(
     mxc_verify_one_time_key(
-      bad, alice_ids$ed25519, "@alice:example.org", "ALICEDEV"
+      algo_kid_ok, bad, alice_ids$ed25519,
+      "@alice:example.org", "ALICEDEV"
     ),
     pattern = "did not verify"
+  )
+
+  # Wrong algorithm prefix on the outer map key
+  expect_error(
+    mxc_verify_one_time_key(
+      paste0("curve25519:", otk_kid), otk_ok, alice_ids$ed25519,
+      "@alice:example.org", "ALICEDEV"
+    ),
+    pattern = "does not start with"
+  )
+  expect_error(
+    mxc_verify_one_time_key(
+      paste0("signed_ed25519:", otk_kid), otk_ok, alice_ids$ed25519,
+      "@alice:example.org", "ALICEDEV"
+    ),
+    pattern = "does not start with"
+  )
+  # Empty / NA algorithm_key_id
+  expect_error(
+    mxc_verify_one_time_key("", otk_ok, alice_ids$ed25519,
+                            "@alice:example.org", "ALICEDEV"),
+    pattern = "non-empty"
+  )
+  expect_error(
+    mxc_verify_one_time_key(NA_character_, otk_ok, alice_ids$ed25519,
+                            "@alice:example.org", "ALICEDEV"),
+    pattern = "non-empty"
+  )
+
+  # 'key' value that is signed but not a valid curve25519 public key.
+  # Build a fresh otk_object where the key is garbage bytes, signed
+  # correctly by alice. The signature is over the canonical_json of
+  # {"key": "<garbage>"}, so it verifies — but the curve25519 check
+  # must still reject before mxc_olm_create_outbound ever sees it.
+  bogus_key <- "AAAA"  # short base64, not 32 bytes
+  bogus_unsigned <- list(key = bogus_key)
+  bogus_sig <- mxc_account_sign(alice,
+                                mx.api::mx_canonical_json(bogus_unsigned))
+  bogus_otk <- list(
+    key = bogus_key,
+    signatures = setNames(
+      list(setNames(list(bogus_sig), paste0("ed25519:", "ALICEDEV"))),
+      "@alice:example.org"
+    )
+  )
+  expect_error(
+    mxc_verify_one_time_key(
+      paste0("signed_curve25519:invalid"), bogus_otk,
+      alice_ids$ed25519, "@alice:example.org", "ALICEDEV"
+    ),
+    pattern = "valid curve25519 public key"
   )
 }

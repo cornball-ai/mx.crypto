@@ -3,7 +3,8 @@
 \alias{mxc_verify_device_keys}
 \title{Verify a Matrix device-keys object}
 \usage{
-mxc_verify_device_keys(device_keys, expected_user_id, expected_device_id)
+mxc_verify_device_keys(device_keys, expected_user_id, expected_device_id,
+                       required_algorithms = NULL)
 }
 \arguments{
 \item{device_keys}{Named list. The \code{device_keys} object,
@@ -14,6 +15,13 @@ block stripped).}
 supposed to belong to.}
 
 \item{expected_device_id}{Character. The device id we're verifying.}
+
+\item{required_algorithms}{Character vector or NULL. Algorithm
+identifiers that must appear in \code{device_keys$algorithms}
+for the device to be accepted. \code{NULL} (the default) means
+"both Olm and Megolm" — i.e. \code{m.olm.v1.curve25519-aes-sha2}
+and \code{m.megolm.v1.aes-sha2}. Pass \code{character(0)} to
+skip the check, but be aware that the audit plan requires it.}
 }
 \value{
 Named list with the verified \code{curve25519} and

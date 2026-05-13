@@ -73,6 +73,12 @@ mxc_ed25519_verify <- function(public_key, message, signature) {
 #' @param expected_user_id Character. Matrix user id the device is
 #'   supposed to belong to.
 #' @param expected_device_id Character. The device id we're verifying.
+#' @param required_algorithms Character vector or NULL. Algorithm
+#'   identifiers that must appear in \code{device_keys$algorithms}
+#'   for the device to be accepted. \code{NULL} (the default) means
+#'   "both Olm and Megolm" — i.e. \code{m.olm.v1.curve25519-aes-sha2}
+#'   and \code{m.megolm.v1.aes-sha2}. Pass \code{character(0)} to
+#'   skip the check, but be aware that the audit plan requires it.
 #'
 #' @return Named list with the verified \code{curve25519} and
 #'   \code{ed25519} public keys (both base64). Use these as the
@@ -86,7 +92,14 @@ mxc_ed25519_verify <- function(public_key, message, signature) {
 #' }
 #' @export
 mxc_verify_device_keys <- function(device_keys, expected_user_id,
-                                   expected_device_id) {
+                                   expected_device_id,
+                                   required_algorithms = NULL) {
+    if (is.null(required_algorithms)) {
+        required_algorithms <- c(
+            "m.olm.v1.curve25519-aes-sha2",
+            "m.megolm.v1.aes-sha2"
+        )
+    }
     dk <- device_keys
     if (!is.list(dk)) {
         stop("device_keys must be a list", call. = FALSE)
@@ -104,6 +117,27 @@ mxc_verify_device_keys <- function(device_keys, expected_user_id,
                      sQuote(expected_device_id),
                      sQuote(dk$device_id %||% "<missing>")
             ), call. = FALSE)
+    }
+    if (length(required_algorithms) > 0L) {
+        alg <- dk$algorithms
+        if (is.null(alg)) {
+            stop("device_keys is missing 'algorithms'", call. = FALSE)
+        }
+        alg_chr <- tryCatch(
+            unlist(alg, use.names = FALSE),
+            error = function(e) NULL
+        )
+        if (!is.character(alg_chr) || length(alg_chr) == 0L) {
+            stop("device_keys 'algorithms' must be a non-empty character vector",
+                 call. = FALSE)
+        }
+        missing_alg <- setdiff(required_algorithms, alg_chr)
+        if (length(missing_alg) > 0L) {
+            stop(sprintf(
+                "device_keys 'algorithms' missing required entries: %s",
+                paste(sQuote(missing_alg), collapse = ", ")
+            ), call. = FALSE)
+        }
     }
     if (!is.list(dk$keys) || length(dk$keys) == 0L) {
         stop("device_keys has no 'keys' map", call. = FALSE)
@@ -167,6 +201,16 @@ mxc_verify_device_keys <- function(device_keys, expected_user_id,
 #' \emph{this function does not look it up for you}, because doing so
 #' would silently re-trust whatever the homeserver hands back.
 #'
+#' The caller must pass the outer map key (\code{"<algorithm>:<key_id>"})
+#' alongside the inner key object so the helper can reject anything but
+#' \code{signed_curve25519}. The helper also confirms the \code{key}
+#' value decodes to a 32-byte curve25519 public key; a signature over
+#' garbage bytes is not a useful "verified" result.
+#'
+#' @param algorithm_key_id Character. The outer map key from the
+#'   \code{one_time_keys} or \code{fallback_keys} response, e.g.
+#'   \code{"signed_curve25519:AAAAAAAAAAA"}. The algorithm prefix
+#'   must be \code{signed_curve25519}.
 #' @param key_object Named list. The signed key object (must contain
 #'   \code{key} and \code{signatures}).
 #' @param signing_ed25519 Character. The base64 ed25519 public key
@@ -183,18 +227,43 @@ mxc_verify_device_keys <- function(device_keys, expected_user_id,
 #' cl <- mx.api::mx_keys_claim(s, list(
 #'   "@alice:server" = list("ALICEDEV" = "signed_curve25519")
 #' ))
-#' obj <- cl$one_time_keys[["@alice:server"]][["ALICEDEV"]][[1]]
-#' otk <- mxc_verify_one_time_key(obj, alice_ed, "@alice:server", "ALICEDEV")
+#' entry <- cl$one_time_keys[["@alice:server"]][["ALICEDEV"]]
+#' algo_kid <- names(entry)[[1]]   # e.g. "signed_curve25519:AAAA"
+#' otk <- mxc_verify_one_time_key(
+#'   algo_kid, entry[[1]], alice_ed, "@alice:server", "ALICEDEV"
+#' )
 #' }
 #' @export
-mxc_verify_one_time_key <- function(key_object, signing_ed25519,
-                                    expected_user_id, expected_device_id) {
+mxc_verify_one_time_key <- function(algorithm_key_id, key_object,
+                                    signing_ed25519, expected_user_id,
+                                    expected_device_id) {
+    if (!is.character(algorithm_key_id) || length(algorithm_key_id) != 1L ||
+        is.na(algorithm_key_id) || !nzchar(algorithm_key_id)) {
+        stop("algorithm_key_id must be a single non-empty string ",
+             "(e.g. 'signed_curve25519:AAAA')",
+             call. = FALSE)
+    }
+    if (!grepl("^signed_curve25519:.+$", algorithm_key_id)) {
+        stop(sprintf(
+            "algorithm_key_id %s does not start with 'signed_curve25519:'",
+            sQuote(algorithm_key_id)
+        ), call. = FALSE)
+    }
     if (!is.list(key_object)) {
         stop("key_object must be a list", call. = FALSE)
     }
     key <- key_object$key
-    if (is.null(key) || !nzchar(key)) {
+    if (is.null(key) || !is.character(key) || length(key) != 1L ||
+        is.na(key) || !nzchar(key)) {
         stop("key_object is missing 'key'", call. = FALSE)
+    }
+    # The 'key' value must be a valid 32-byte curve25519 public key.
+    # A signed-but-malformed key would later blow up in
+    # mxc_olm_create_outbound; check it here so the helper's promised
+    # "ready for session creation" contract holds.
+    if (!isTRUE(.Call(.mxc_curve25519_is_valid, as.character(key)))) {
+        stop("key_object 'key' is not a valid curve25519 public key",
+             call. = FALSE)
     }
     if (!is.list(key_object$signatures)) {
         stop("key_object is unsigned (no signatures block)", call. = FALSE)

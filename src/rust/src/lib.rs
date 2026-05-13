@@ -338,6 +338,12 @@ fn mxc_megolm_inbound_unpickle(blob: &str, key: &RObject) {
 // -- Ed25519 signature verification ------------------------------------
 
 #[roxido]
+fn mxc_curve25519_is_valid(public_key_b64: &str) {
+    let ok = Curve25519PublicKey::from_base64(public_key_b64).is_ok();
+    ok.to_r(pc)
+}
+
+#[roxido]
 fn mxc_ed25519_verify(public_key_b64: &str, message: &RObject, signature_b64: &str) {
     let pk = Ed25519PublicKey::from_base64(public_key_b64)
         .stop_str("invalid ed25519 public key (base64)");
