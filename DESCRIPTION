@@ -12,7 +12,7 @@ Authors@R: c(
            comment = "Authors of the bundled 'vodozemac' Rust crate; see inst/AUTHORS"),
     person("Authors of the dependency Rust crates", role = "ctb",
            comment = "see inst/AUTHORS for details"))
-Description: Olm and Megolm cryptographic ratchet primitives for the
+Description: 'Olm' and 'Megolm' encryption ratchet primitives for the
     'Matrix' messaging protocol <https://matrix.org/>, wrapping the
     'vodozemac' Rust crate. Provides device-key generation, one-time-key
     management, 1:1 'Olm' sessions, and 'Megolm' group sessions. Pairs
