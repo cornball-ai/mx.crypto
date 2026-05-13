@@ -2,6 +2,7 @@
 ^.*\.Rproj$
 ^\.claude$
 ^CLAUDE\.md$
+^SECURITY\.md$
 ^\.git$
 ^\.github$
 ^\.gitignore$

@@ -1,0 +1,415 @@
+<!--
+%\VignetteEngine{simplermarkdown::mdweave_to_html}
+%\VignetteIndexEntry{Security audit (mx.crypto 0.1.0.1)}
+-->
+---
+title: "Security audit (mx.crypto 0.1.0.1)"
+---
+
+# Security audit: mx.crypto 0.1.0.1
+
+**Audit date:** 2026-05-13.
+**Subject:** `mx.crypto` 0.1.0 (vodozemac 0.10.0 pin) → 0.1.0.1 with the fixes
+described here.
+**Trigger:** Soatok's 2026-02-17 disclosure of cryptographic issues in
+vodozemac
+([blog post](https://soatok.blog/2026/02/17/cryptographic-issues-in-matrixs-rust-library-vodozemac/)).
+The upstream fixes for the most severe finding (non-contributory
+Diffie-Hellman) shipped in vodozemac 0.10.0. The point of this audit is
+not to stop there — it's to check whether **mx.crypto** itself is
+positioned to take advantage of those fixes and to give callers what
+they need to validate untrusted Matrix key material.
+
+## 1. Scope and threat model
+
+`mx.crypto` is a thin R wrapper over the Olm + Megolm primitives
+in vodozemac. It sits beside `mx.api` (Matrix HTTP transport), and a
+higher-level package (eventually `mx.client`) is expected to compose
+the two into a real client. The threat model for the wrapper layer is
+narrow but load-bearing:
+
+- A **malicious homeserver** can return anything in `/_matrix/client/v3/keys/query`,
+  `/_matrix/client/v3/keys/claim`, or `/_matrix/client/v3/sync`.
+  `mx.crypto` must not let those responses corrupt session state or
+  silently leak plaintext.
+- A **compromised remote device** can submit signed material that
+  satisfies structural checks but originates from the wrong identity.
+  `mx.crypto` cannot detect this on its own — identity pinning lives
+  above this layer — but `mx.crypto` must at minimum expose
+  verification primitives so callers can implement TOFU /
+  cross-signing without rolling their own ed25519 glue.
+- A **buggy or hostile peer** can ship malformed Olm / Megolm
+  ciphertext or pre-key messages. `mx.crypto` must fail closed (clear
+  error, no partial state mutation) rather than returning ambiguous
+  values.
+
+Out of scope for the wrapper: cross-signing, SAS verification, and the
+v2 MAC migration. Those land in a higher layer.
+
+## 2. Dependency baseline: vodozemac 0.10.0
+
+The Soatok post called out one **high-severity** issue and a handful of
+lower-severity issues. The high-severity issue is the one that matters
+most:
+
+> Olm Diffie-Hellman accepts the identity element. When this occurs, all
+> three DH computations produce zero output, resulting in a predictable
+> session key.
+
+In vodozemac 0.10.0 the fix is already in place. The relevant code in
+the vendored crate (`src/types/curve25519.rs:52`) is:
+
+```rust
+/// Returns `None` if one of the keys does not show contributory behavior
+/// resulting in an all-zero shared secret.
+pub fn diffie_hellman(&self, their_public_key: &Curve25519PublicKey)
+    -> Option<SharedSecret>
+{
+    let shared_secret = self.0.diffie_hellman(&their_public_key.inner);
+    if shared_secret.was_contributory() { Some(shared_secret) } else { None }
+}
+```
+
+`Shared3DHSecret::new` and `RemoteShared3DHSecret::new` propagate the
+`None` with `?`. A dedicated regression test
+(`triple_diffie_hellman_non_contributory_key`) builds an all-zero
+remote one-time key and asserts that `Shared3DHSecret::new` returns
+`None`. Our pinned 0.10.0 ships that test and that fix.
+
+Strict Ed25519 verification is also the default in 0.10.0
+(`src/types/ed25519.rs`), with the laxer `#[cfg(fuzzing)]` form only
+compiled when the `fuzzing` Cargo feature is enabled. mx.crypto does
+not enable that feature in its build.
+
+So the *primitive* is correct. The remaining question is whether
+mx.crypto correctly propagates the primitive's results.
+
+## 3. Surface map
+
+Before 0.1.0.1 mx.crypto exposed 24 functions covering:
+
+| Group | Functions |
+|---|---|
+| Account | `mxc_account_new`, `mxc_account_identity_keys`, `mxc_account_sign`, `mxc_account_generate_one_time_keys`, `mxc_account_one_time_keys`, `mxc_account_mark_published`, `mxc_account_fallback_key`, `mxc_account_pickle`, `mxc_account_unpickle` |
+| Olm | `mxc_olm_create_outbound`, `mxc_olm_create_inbound`, `mxc_olm_encrypt`, `mxc_olm_decrypt`, `mxc_olm_session_pickle`, `mxc_olm_session_unpickle` |
+| Megolm | `mxc_megolm_outbound_new`, `mxc_megolm_outbound_info`, `mxc_megolm_encrypt`, `mxc_megolm_outbound_pickle`, `mxc_megolm_outbound_unpickle`, `mxc_megolm_inbound_new`, `mxc_megolm_decrypt`, `mxc_megolm_inbound_pickle`, `mxc_megolm_inbound_unpickle` |
+
+What was **missing** was any way to verify signatures. `mxc_account_sign`
+existed; nothing on the other side. That meant:
+
+- `/keys/query` could return arbitrary attacker-chosen ed25519 +
+  curve25519 keys for a target device and no caller could check the
+  self-signature.
+- `/keys/claim` could return OTKs signed under any ed25519 key the
+  homeserver felt like and no caller could check.
+
+0.1.0.1 adds three exports:
+
+- `mxc_ed25519_verify(public_key, message, signature)` — thin
+  vodozemac binding (uses `verify_strict`).
+- `mxc_verify_device_keys(device_keys, expected_user_id, expected_device_id)` —
+  full structural + signature check for a `/keys/query` device entry.
+- `mxc_verify_one_time_key(key_object, signing_ed25519, expected_user_id, expected_device_id)` —
+  same for a `/keys/claim` entry.
+
+The two high-level helpers are pure R; they call `mxc_ed25519_verify`
+(Rust) and `mx.api::mx_canonical_json` (pure R) for the signed-bytes
+reconstruction.
+
+## 4. Canonical JSON
+
+`mx.crypto` does not implement canonical JSON itself — it consumes the
+output of `mx.api::mx_canonical_json()`, which was audited separately
+when those endpoints landed in `mx.api` 0.1.0.1. Key properties of that
+encoder (97-assertion test suite):
+
+- Locale-independent key sort (UTF-8 byte order, radix sort).
+- Integers only (`[-(2^53)+1, (2^53)-1]`), no floats, no exponents.
+- Rejects NaN, Inf, NA, NA object keys, duplicate object keys.
+- Non-ASCII passes through as raw UTF-8 bytes; control chars
+  `0x01-0x1F` use the spec-defined `\b \f \n \r \t` named escapes or
+  `\u`-form.
+- `I()` forces array encoding (matches jsonlite).
+
+The encoder is hand-rolled — not a jsonlite wrapper — because byte
+stability across implementations is the entire point. Letting another
+package's default flags drift would silently break signature
+verification across clients.
+
+## 5. Finding (HIGH): `mxc_olm_create_outbound` swallowed `SessionCreationError`
+
+vodozemac's `Account::create_outbound_session` has this signature:
+
+```rust
+pub fn create_outbound_session(
+    &self,
+    session_config: SessionConfig,
+    identity_key: Curve25519PublicKey,
+    one_time_key: Curve25519PublicKey,
+) -> Result<Session, SessionCreationError>
+```
+
+The `Result::Err(SessionCreationError::NonContributoryKey)` variant is
+exactly how the vodozemac fix surfaces the "remote key is all zeros"
+case to the caller. mx.crypto's wrapper, however, looked like this:
+
+```rust
+fn mxc_olm_create_outbound(...) {
+    let sess = acct.create_outbound_session(SessionConfig::version_1(), id_key, otk);
+    RExternalPtr::encode(sess, TAG_OLM_SESSION, pc)
+}
+```
+
+`RExternalPtr::encode<T>` is generic; it happily boxed a `Result<Session, _>`
+into an external pointer that R hands back to the caller, with the
+external-pointer tag claiming it was a `Session`. Downstream code
+(`mxc_olm_encrypt`, `mxc_olm_decrypt`) then did
+`ext.decode_mut::<Session>()` and used those bytes as if they were a
+`Session`. That is undefined behavior in the Rust type-system sense.
+In practice it "worked" on the happy path because of niche-layout
+coincidences between `Result<Session, _>` and `Session`; on the error
+path it produced unpredictable behavior.
+
+### Reproducer (before the fix)
+
+```r
+library(mx.crypto)
+acct <- mxc_account_new()
+zero <- jsonlite::base64_enc(as.raw(rep(0, 32)))  # 32-byte zero key
+sess <- mxc_olm_create_outbound(acct, zero, zero)
+class(sess)
+#> [1] "externalptr"               <-- no error raised
+mxc_olm_encrypt(sess, charToRaw("hi"))
+#> *** R hangs / aborts / returns garbage ***
+```
+
+### Severity
+
+The vodozemac DH-zero attack itself is foiled — vodozemac correctly
+refuses to produce a usable session. But mx.crypto did not surface the
+refusal: a caller has no way to tell "this homeserver fed me a
+malicious key" apart from "my session pointer is broken." A
+defense-in-depth audit pattern (check, log, alert) cannot fire because
+the failure is invisible.
+
+There is also a memory-safety concern: the boxed `Result` is freed via
+R's external-pointer finalizer with `Session`'s drop glue, which is the
+wrong drop for the `Err` variant. Whether this actually corrupts the
+heap depends on internal layout details we should not rely on.
+
+### Fix
+
+Single line: `.stop_str(...)` on the `Result`.
+
+```rust
+let sess = acct
+    .create_outbound_session(SessionConfig::version_1(), id_key, otk)
+    .stop_str(
+        "create_outbound_session failed (e.g. non-contributory \
+         Diffie-Hellman key)",
+    );
+RExternalPtr::encode(sess, TAG_OLM_SESSION, pc)
+```
+
+### Reproducer (after the fix)
+
+```r
+library(mx.crypto)
+acct <- mxc_account_new()
+zero <- jsonlite::base64_enc(as.raw(rep(0, 32)))
+mxc_olm_create_outbound(acct, zero, zero)
+#> Error: create_outbound_session failed (e.g. non-contributory
+#> Diffie-Hellman key)
+```
+
+Covered by `inst/tinytest/test_verify.R` with `expect_error(...,
+pattern = "non-contributory|create_outbound_session")`.
+
+### Same review on the rest of the surface
+
+Audit pass over every wrapper that consumes a vodozemac `Result`:
+
+| Function | vodozemac call | Pre-audit | Post-audit |
+|---|---|---|---|
+| `mxc_olm_create_outbound` | `create_outbound_session` | **swallowed** | propagated |
+| `mxc_olm_create_inbound` | `create_inbound_session` | already `.stop_str(...)` | unchanged |
+| `mxc_olm_encrypt` | `Session::encrypt` | already `.stop_str(...)` | unchanged |
+| `mxc_olm_decrypt` | `Session::decrypt` | already `.stop_str(...)` | unchanged |
+| `mxc_megolm_inbound_new` | `InboundGroupSession::new` | returns `Self` (no error) | unchanged |
+| `mxc_megolm_encrypt` | `GroupSession::encrypt` | infallible | unchanged |
+| `mxc_megolm_decrypt` | `InboundGroupSession::decrypt` | already `.stop_str(...)` | unchanged |
+| `*_pickle` / `*_unpickle` | `Pickle::{from,to}_encrypted` | already `.stop_str(...)` | unchanged |
+
+Only `mxc_olm_create_outbound` was missing the propagation.
+
+## 6. Finding (HIGH): no signature-verification primitive
+
+Before 0.1.0.1 the demo at `inst/integration/e2e_demo.R` (and any other
+caller) treated the homeserver's `/keys/query` and `/keys/claim`
+responses as ground truth — every signature returned in those responses
+went unchecked. mx.crypto's threat model documented "trust the
+caller's identity-pinning layer," but the caller could not actually do
+that work because mx.crypto did not expose ed25519 verification.
+
+### Fix: three exports
+
+The new Rust binding is a thin pass-through to vodozemac's
+`Ed25519PublicKey::verify` (which itself calls `verify_strict`):
+
+```rust
+#[roxido]
+fn mxc_ed25519_verify(public_key_b64: &str, message: &RObject, signature_b64: &str) {
+    let pk = Ed25519PublicKey::from_base64(public_key_b64)
+        .stop_str("invalid ed25519 public key (base64)");
+    let sig = Ed25519Signature::from_base64(signature_b64)
+        .stop_str("invalid ed25519 signature (base64 / length)");
+    let msg = raw_bytes(message);
+    let ok = pk.verify(msg, &sig).is_ok();
+    ok.to_r(pc)
+}
+```
+
+The two R helpers (`mxc_verify_device_keys`, `mxc_verify_one_time_key`)
+do the Matrix-spec dance around it:
+
+1. Strip `signatures` and `unsigned` from the object.
+2. Canonicalize the remainder.
+3. Verify against the ed25519 key the object claims for itself
+   (`mxc_verify_device_keys`) or the ed25519 key passed in by the
+   caller from a previously verified device record
+   (`mxc_verify_one_time_key`).
+
+Both helpers fail closed: every structural problem, every signer
+mismatch, and every signature-bytes mismatch raises an error rather
+than returning a value the caller might use by accident.
+
+### Hostile-homeserver fixtures
+
+`inst/tinytest/test_verify.R` builds a real signed device-keys object
+and then mutates it the way a hostile homeserver would. Every variant
+must raise:
+
+| Mutation | Expected error |
+|---|---|
+| Wrong `expected_user_id` | "user_id mismatch" |
+| Wrong `expected_device_id` | "device_id mismatch" |
+| `keys` missing `curve25519:<dev>` | "missing curve25519" |
+| `keys` missing `ed25519:<dev>` | "missing ed25519" |
+| `signatures` block absent | "unsigned" |
+| Signature only under attacker's user_id | "no signatures from" |
+| Signature attached under `ed25519:OTHERDEV` | "no ed25519:ALICEDEV signature" |
+| `keys.curve25519` swapped for another device's | "did not verify" |
+| OTK signed by attacker's ed25519 | "did not verify" |
+| OTK missing `key` | "missing 'key'" |
+| OTK unsigned | "unsigned" |
+| OTK `key` field tampered with | "did not verify" |
+
+The full test suite is 25 assertions and lives in
+`inst/tinytest/test_verify.R`.
+
+### What this does NOT cover
+
+Identity pinning. `mxc_verify_device_keys` returns the ed25519 key the
+object claimed for itself, validated as self-consistent — it does not
+say "this is really @alice's ed25519." That belongs to a layer above
+(TOFU on first contact, then cross-signing). The helper's docstring
+calls this out explicitly so callers don't assume otherwise.
+
+## 7. DH / session error propagation (full pass)
+
+Recap of section 5 with a wider lens. mx.crypto's R-side error handling
+on the happy path is straightforward — `.Call(.mxc_*)` errors propagate
+as R `simpleError`s. The risk is silent corruption: returning what
+looks like a valid externalptr/value when the underlying primitive
+errored. Confirmed: post-fix, every fallible vodozemac call surfaces
+its error as a clean R error before any external-pointer is handed
+back. No partial-state mutation paths remain.
+
+## 8. Pickle and local state
+
+`mxc_*_pickle()` takes a caller-supplied 32-byte raw vector. The
+pickle format encrypts the serialised account/session state under that
+key. Behavior:
+
+- **Wrong key**: `mxc_*_unpickle()` errors cleanly (already covered by
+  `test_account.R`).
+- **Corrupted blob**: errors at decryption.
+- **Right key, wrong tag (e.g. an Olm session pickle handed to
+  `mxc_megolm_inbound_unpickle`)**: errors at deserialization.
+
+Spec caveat: vodozemac's pickle uses a deterministic IV. The
+implication is that reusing the same pickle key across pickles can
+leak ordering information. The recommended discipline is **one pickle
+key per Account / Session**, which is what callers should do anyway
+for separation-of-concerns reasons. This is now stated in
+`SECURITY.md`.
+
+## 9. Other Soatok findings, mapped to our pin
+
+| Finding | Severity | Our pin status |
+|---|---|---|
+| Olm DH identity element accepted | **High** | Fixed upstream + now propagated in mx.crypto (section 5) |
+| Downgrade v2→v1 MAC | Low | Olm message-MAC versioning lives below mx.crypto; tracked for the v2 migration |
+| ECIES CheckCode 6-bit entropy | Low | Affects QR-SAS verification, which mx.crypto does not expose |
+| Drop message keys after 40 skipped | Low | Affects out-of-order delivery edge cases for buffered clients; mx.crypto inherits upstream behavior |
+| Pickle deterministic IV | Low | Documented in `SECURITY.md`; per-account pickle keys recommended |
+| `#[cfg(fuzzing)]` disables MAC | None | Only active under the `fuzzing` Cargo feature; mx.crypto's build does not enable it |
+| Strict Ed25519 off by default | Low | vodozemac 0.10.0 uses `verify_strict` in the non-fuzzing path; our `mxc_ed25519_verify` calls that path |
+
+## 10. API boundary with mx.api
+
+`mx.crypto` deliberately does not depend on `mx.api` for runtime
+crypto — Suggests only, used by `mxc_verify_device_keys` /
+`mxc_verify_one_time_key` to canonicalize signed payloads. The bright
+line:
+
+- `mx.api` knows about HTTP and JSON; it does no signature work.
+- `mx.crypto` knows about ed25519, curve25519, Olm, Megolm; it does no
+  HTTP work.
+- A higher layer (eventually `mx.client`) is expected to thread them
+  together with identity pinning, key storage, and the broadcast /
+  receive loop.
+
+The integration demo at `inst/integration/e2e_demo.R` is a working
+example of that thread. With these audit fixes in place, the demo
+should also use the new verify helpers before opening Olm sessions —
+that follow-up is captured in section 11.
+
+## 11. Pending follow-ups
+
+Not in scope for this audit; tracked for later versions.
+
+- Wire `mxc_verify_device_keys` + `mxc_verify_one_time_key` into the
+  `e2e_demo.R` broadcast loop so the demo reflects best practice.
+- TOFU / cross-signing helpers (master / self / user signing keys).
+- SAS verification (`m.key.verification.start` etc.).
+- v2 Olm MAC migration when the Matrix spec lands.
+- Track upstream vodozemac for any future disclosures and pull the
+  changelog into `NEWS.md` on each bump.
+
+## 12. Verification
+
+Build + test results from this audit branch:
+
+| Check | Result |
+|---|---|
+| `tinytest::test_package("mx.crypto")` | 22 + 18 + 11 + 25 = 76 assertions, all pass |
+| `tinypkgr::check()` | 0 errors, 0 warnings (1 standard "new submission" note retained) |
+| Live homeserver e2e demo | Decrypted plaintext round-trips through 4 share targets (FluffyChat verified) |
+| Zero-curve25519 regression | Errors cleanly with `"non-contributory"` message |
+| Tampered device_keys | Each mutation raises the expected, distinct error |
+
+## Changelog
+
+`mx.crypto 0.1.0.1`:
+
+- **HIGH**: `mxc_olm_create_outbound` now propagates
+  `SessionCreationError` (previously swallowed; non-contributory DH
+  keys silently produced a corrupt session pointer).
+- **HIGH**: Added `mxc_ed25519_verify`, `mxc_verify_device_keys`,
+  `mxc_verify_one_time_key` so callers can validate `/keys/query` and
+  `/keys/claim` responses before using them.
+- `SECURITY.md` added.
+- Vignette: this document.
+- DESCRIPTION: bumped to 0.1.0.1; added `mx.api (>= 0.1.0.1)` and
+  `simplermarkdown` to Suggests; `VignetteBuilder: simplermarkdown`.
