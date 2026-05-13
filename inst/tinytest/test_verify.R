@@ -41,7 +41,9 @@ expect_error(mxc_ed25519_verify(ids$ed25519, "not raw", sig))
 # All-zero curve25519: vodozemac returns Err(NonContributoryKey); mx.crypto
 # now propagates that as an R error instead of returning a corrupt
 # externalptr.
-zero_curve <- jsonlite::base64_enc(as.raw(rep(0, 32)))
+# 32 zero bytes, base64-encoded. Hardcoded so the test doesn't need
+# jsonlite as an unconditional dependency.
+zero_curve <- "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 expect_error(
   mxc_olm_create_outbound(acct, zero_curve, zero_curve),
   pattern = "non-contributory|create_outbound_session"
@@ -74,7 +76,8 @@ build_dk <- function(account, user_id, device_id) {
   out
 }
 
-if (requireNamespace("mx.api", quietly = TRUE)) {
+if (requireNamespace("mx.api", quietly = TRUE) &&
+    utils::packageVersion("mx.api") >= "0.2.0") {
   alice <- mxc_account_new()
   alice_ids <- mxc_account_identity_keys(alice)
   dk_ok <- build_dk(alice, "@alice:example.org", "ALICEDEV")
