@@ -30,12 +30,10 @@
 #' @return Single logical: \code{TRUE} for a valid signature,
 #'   \code{FALSE} otherwise.
 #' @examples
-#' \dontrun{
 #' acct <- mxc_account_new()
 #' ids <- mxc_account_identity_keys(acct)
 #' sig <- mxc_account_sign(acct, "{\"hello\":\"world\"}")
 #' mxc_ed25519_verify(ids$ed25519, charToRaw("{\"hello\":\"world\"}"), sig)
-#' }
 #' @export
 mxc_ed25519_verify <- function(public_key, message, signature) {
     if (!is.raw(message)) {

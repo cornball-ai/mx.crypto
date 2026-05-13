@@ -17,8 +17,6 @@ key, used to start sessions) and ed25519 (signing / fingerprint key).
 Both are unpadded base64 strings, ready for `/keys/upload`.
 }
 \examples{
-\dontrun{
 k <- mxc_account_identity_keys(mxc_account_new())
 k$curve25519
-}
 }

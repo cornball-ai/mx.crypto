@@ -28,10 +28,8 @@ valid and \code{FALSE} when it isn't; raises an error if any of
 (bad base64, wrong length, etc.).
 }
 \examples{
-\dontrun{
 acct <- mxc_account_new()
 ids <- mxc_account_identity_keys(acct)
 sig <- mxc_account_sign(acct, "{\"hello\":\"world\"}")
 mxc_ed25519_verify(ids$ed25519, charToRaw("{\"hello\":\"world\"}"), sig)
-}
 }

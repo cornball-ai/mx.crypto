@@ -19,7 +19,6 @@ The caller must canonicalise the JSON per the Matrix spec
 passing it in. mx.crypto does not canonicalise; mx.api will.
 }
 \examples{
-\dontrun{
+acct <- mxc_account_new()
 sig <- mxc_account_sign(acct, '{"hello":"world"}')
-}
 }

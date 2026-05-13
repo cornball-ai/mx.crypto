@@ -18,8 +18,7 @@ Each value is a curve25519 public key; the caller should sign each
 with [mxc_account_sign] and upload as `signed_curve25519:<key_id>`.
 }
 \examples{
-\dontrun{
+acct <- mxc_account_new()
 mxc_account_generate_one_time_keys(acct, 5L)
 otks <- mxc_account_one_time_keys(acct)
-}
 }

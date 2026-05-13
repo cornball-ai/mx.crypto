@@ -19,7 +19,6 @@ Adds `n` curve25519 one-time keys to the Account's pool. Call
 [mxc_account_mark_published] once the homeserver has accepted them.
 }
 \examples{
-\dontrun{
-mxc_account_generate_one_time_keys(acct, 50L)
-}
+acct <- mxc_account_new()
+mxc_account_generate_one_time_keys(acct, 5L)
 }

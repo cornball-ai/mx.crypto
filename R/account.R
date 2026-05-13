@@ -6,10 +6,8 @@
 #'
 #' @return An external pointer to a vodozemac Account.
 #' @examples
-#' \dontrun{
 #' acct <- mxc_account_new()
 #' mxc_account_identity_keys(acct)
-#' }
 #' @export
 mxc_account_new <- function() {
   .Call(.mxc_account_new)
@@ -24,10 +22,8 @@ mxc_account_new <- function() {
 #' @param account An Account from [mxc_account_new] or [mxc_account_unpickle].
 #' @return A named list with `curve25519` and `ed25519` strings.
 #' @examples
-#' \dontrun{
 #' k <- mxc_account_identity_keys(mxc_account_new())
 #' k$curve25519
-#' }
 #' @export
 mxc_account_identity_keys <- function(account) {
   .Call(.mxc_account_identity_keys, account)
@@ -43,9 +39,8 @@ mxc_account_identity_keys <- function(account) {
 #' @param canonical_json A character string containing canonical JSON.
 #' @return Unpadded base64 ed25519 signature.
 #' @examples
-#' \dontrun{
+#' acct <- mxc_account_new()
 #' sig <- mxc_account_sign(acct, '{"hello":"world"}')
-#' }
 #' @export
 mxc_account_sign <- function(account, canonical_json) {
   .Call(.mxc_account_sign, account, as.character(canonical_json))
@@ -61,9 +56,8 @@ mxc_account_sign <- function(account, canonical_json) {
 #' @param n Number of OTKs to generate.
 #' @return Invisible NULL; mutates `account` in place.
 #' @examples
-#' \dontrun{
-#' mxc_account_generate_one_time_keys(acct, 50L)
-#' }
+#' acct <- mxc_account_new()
+#' mxc_account_generate_one_time_keys(acct, 5L)
 #' @export
 mxc_account_generate_one_time_keys <- function(account, n) {
   invisible(.Call(.mxc_account_generate_one_time_keys, account, as.integer(n)))
@@ -79,10 +73,9 @@ mxc_account_generate_one_time_keys <- function(account, n) {
 #' @return Named list mapping `key_id` to `curve25519_pub` (both
 #'   unpadded base64 strings).
 #' @examples
-#' \dontrun{
+#' acct <- mxc_account_new()
 #' mxc_account_generate_one_time_keys(acct, 5L)
 #' otks <- mxc_account_one_time_keys(acct)
-#' }
 #' @export
 mxc_account_one_time_keys <- function(account) {
   .Call(.mxc_account_one_time_keys, account)
