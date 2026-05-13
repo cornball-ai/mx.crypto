@@ -1,15 +1,15 @@
 <!--
 %\VignetteEngine{simplermarkdown::mdweave_to_html}
-%\VignetteIndexEntry{Security audit (mx.crypto 0.1.0.1)}
+%\VignetteIndexEntry{Security audit (mx.crypto 0.2.0)}
 -->
 ---
-title: "Security audit (mx.crypto 0.1.0.1)"
+title: "Security audit (mx.crypto 0.2.0)"
 ---
 
-# Security audit: mx.crypto 0.1.0.1
+# Security audit: mx.crypto 0.2.0
 
 **Audit date:** 2026-05-13.
-**Subject:** `mx.crypto` 0.1.0 (vodozemac 0.10.0 pin) → 0.1.0.1 with the fixes
+**Subject:** `mx.crypto` 0.1.0 (vodozemac 0.10.0 pin) → 0.2.0 with the fixes
 described here.
 **Trigger:** Soatok's 2026-02-17 disclosure of cryptographic issues in
 vodozemac
@@ -86,7 +86,7 @@ mx.crypto correctly propagates the primitive's results.
 
 ## 3. Surface map
 
-Before 0.1.0.1 mx.crypto exposed 24 functions covering:
+Before 0.2.0 mx.crypto exposed 24 functions covering:
 
 | Group | Functions |
 |---|---|
@@ -103,7 +103,7 @@ existed; nothing on the other side. That meant:
 - `/keys/claim` could return OTKs signed under any ed25519 key the
   homeserver felt like and no caller could check.
 
-0.1.0.1 adds three exports plus one internal Rust binding:
+0.2.0 adds three exports plus one internal Rust binding:
 
 - `mxc_ed25519_verify(public_key, message, signature)` — thin
   vodozemac binding (uses `verify_strict`).
@@ -130,7 +130,7 @@ The two high-level helpers are pure R; they call `mxc_ed25519_verify`
 
 `mx.crypto` does not implement canonical JSON itself — it consumes the
 output of `mx.api::mx_canonical_json()`, which was audited separately
-when those endpoints landed in `mx.api` 0.1.0.1. Key properties of that
+when those endpoints landed in `mx.api` 0.2.0. Key properties of that
 encoder (97-assertion test suite):
 
 - Locale-independent key sort (UTF-8 byte order, radix sort).
@@ -254,7 +254,7 @@ Only `mxc_olm_create_outbound` was missing the propagation.
 
 ## 6. Finding (HIGH): no signature-verification primitive
 
-Before 0.1.0.1 the demo at `inst/integration/e2e_demo.R` (and any other
+Before 0.2.0 the demo at `inst/integration/e2e_demo.R` (and any other
 caller) treated the homeserver's `/keys/query` and `/keys/claim`
 responses as ground truth — every signature returned in those responses
 went unchecked. mx.crypto's threat model documented "trust the
@@ -431,7 +431,7 @@ Build + test results from this audit branch:
 
 ## Changelog
 
-`mx.crypto 0.1.0.1`:
+`mx.crypto 0.2.0`:
 
 - **HIGH**: `mxc_olm_create_outbound` now propagates
   `SessionCreationError` (previously swallowed; non-contributory DH
@@ -441,5 +441,5 @@ Build + test results from this audit branch:
   `/keys/claim` responses before using them.
 - `SECURITY.md` added.
 - Vignette: this document.
-- DESCRIPTION: bumped to 0.1.0.1; added `mx.api (>= 0.1.0.1)` and
+- DESCRIPTION: bumped to 0.2.0; added `mx.api (>= 0.2.0)` and
   `simplermarkdown` to Suggests; `VignetteBuilder: simplermarkdown`.

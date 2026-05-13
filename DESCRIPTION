@@ -1,7 +1,7 @@
 Package: mx.crypto
 Type: Package
 Title: Matrix End-to-End Encryption Primitives
-Version: 0.1.0.1
+Version: 0.2.0
 Date: 2026-05-13
 Authors@R: c(
     person("Troy", "Hernandez", role = c("aut", "cre"),
@@ -22,6 +22,6 @@ URL: https://github.com/cornball-ai/mx.crypto
 BugReports: https://github.com/cornball-ai/mx.crypto/issues
 Depends: R (>= 4.3)
 SystemRequirements: Cargo (Rust's package manager), rustc (>= 1.85)
-Suggests: tinytest, mx.api (>= 0.1.0.1), simplermarkdown
+Suggests: tinytest, mx.api (>= 0.2.0), simplermarkdown
 VignetteBuilder: simplermarkdown
 Encoding: UTF-8

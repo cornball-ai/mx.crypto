@@ -1,4 +1,4 @@
-# mx.crypto 0.1.0.1
+# mx.crypto 0.2.0
 
 * **HIGH** (security): `mxc_olm_create_outbound()` now propagates
   vodozemac's `SessionCreationError` instead of silently encoding a

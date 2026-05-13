@@ -92,10 +92,10 @@ above this layer.
 
 ## Status
 
-**0.1.0.1** (GitHub `main`, 2026-05-13). Not on CRAN yet.
+**0.2.0** (GitHub `main`, 2026-05-13). Not on CRAN yet.
 
 - 0.1.0 was the initial release, GitHub-only.
-- 0.1.0.1 adds `mxc_ed25519_verify` and the two `mxc_verify_*` helpers,
+- 0.2.0 adds `mxc_ed25519_verify` and the two `mxc_verify_*` helpers,
   fixes a latent memory-safety bug in `mxc_olm_create_outbound`
   (`SessionCreationError` is now propagated to R rather than silently
   encoded as a `Session` external pointer), and ships an audit
