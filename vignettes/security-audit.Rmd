@@ -103,18 +103,28 @@ existed; nothing on the other side. That meant:
 - `/keys/claim` could return OTKs signed under any ed25519 key the
   homeserver felt like and no caller could check.
 
-0.1.0.1 adds three exports:
+0.1.0.1 adds three exports plus one internal Rust binding:
 
 - `mxc_ed25519_verify(public_key, message, signature)` — thin
   vodozemac binding (uses `verify_strict`).
-- `mxc_verify_device_keys(device_keys, expected_user_id, expected_device_id)` —
+- `mxc_verify_device_keys(device_keys, expected_user_id, expected_device_id, required_algorithms = NULL)` —
   full structural + signature check for a `/keys/query` device entry.
-- `mxc_verify_one_time_key(key_object, signing_ed25519, expected_user_id, expected_device_id)` —
-  same for a `/keys/claim` entry.
+  `required_algorithms = NULL` means "both Olm and Megolm" (i.e.
+  `m.olm.v1.curve25519-aes-sha2` and `m.megolm.v1.aes-sha2`); pass
+  `character(0)` to skip the algorithms check.
+- `mxc_verify_one_time_key(algorithm_key_id, key_object, signing_ed25519, expected_user_id, expected_device_id)` —
+  same for a `/keys/claim` entry. `algorithm_key_id` is the outer
+  `"<algorithm>:<key_id>"` map key from the claim response so the
+  helper can reject anything but `signed_curve25519`.
+
+Internal-only: `mxc_curve25519_is_valid()` is a Rust binding (not
+exported) used by `mxc_verify_one_time_key` to confirm the OTK's
+`key` value really decodes to a 32-byte curve25519 public key, so a
+signed-but-malformed key cannot pass.
 
 The two high-level helpers are pure R; they call `mxc_ed25519_verify`
-(Rust) and `mx.api::mx_canonical_json` (pure R) for the signed-bytes
-reconstruction.
++ `mxc_curve25519_is_valid` (Rust) and `mx.api::mx_canonical_json`
+(pure R) for the signed-bytes reconstruction.
 
 ## 4. Canonical JSON
 
