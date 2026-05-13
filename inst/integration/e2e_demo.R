@@ -126,60 +126,117 @@ cat("  B OTK counts:",
           unlist(upB$one_time_key_counts %||% list()),
           sep = "=", collapse = " "), "\n")
 
-# ---- A queries B, claims an OTK, opens Olm + Megolm ---------------------
+# ---- A discovers every device in the room and shares one Megolm key ----
 
-cat("A queries B's device keys\n")
-q <- mx_keys_query(sA, setNames(list(sB$device_id), sB$user_id))
+cat("A lists joined room members\n")
+members <- mx_room_members(sA, room_id)
+cat("  members:", paste(members, collapse = ", "), "\n")
+
+cat("A queries every device for every member\n")
+q <- mx_keys_query(
+    sA,
+    setNames(lapply(members, function(u) character()), members)
+)
+
+# Sanity: B's identity matches our local Account
 deviceB <- q$device_keys[[sB$user_id]][[sB$device_id]]
 stopifnot(!is.null(deviceB))
-b_curve <- deviceB$keys[[paste0("curve25519:", sB$device_id)]]
-b_ed <- deviceB$keys[[paste0("ed25519:", sB$device_id)]]
-stopifnot(b_curve == idB$curve25519, b_ed == idB$ed25519)
-
-cat("A claims an OTK from B\n")
-cl <- mx_keys_claim(
-    sA,
-    setNames(list(setNames(list("signed_curve25519"), sB$device_id)),
-             sB$user_id)
+stopifnot(
+    deviceB$keys[[paste0("curve25519:", sB$device_id)]] == idB$curve25519,
+    deviceB$keys[[paste0("ed25519:", sB$device_id)]] == idB$ed25519
 )
-otk_obj <- cl$one_time_keys[[sB$user_id]][[sB$device_id]]
-stopifnot(length(otk_obj) == 1L)
-otk_value <- otk_obj[[1]]$key
 
-cat("A opens outbound Olm + Megolm sessions\n")
-olmA <- mxc_olm_create_outbound(acctA, b_curve, otk_value)
+# Collect targets: every (user, device) reported by /keys/query, minus
+# A's own device. Devices that haven't published keys (e.g. the live
+# cornelius bot if it isn't crypto-aware) won't appear in the response,
+# so they're skipped naturally.
+targets <- list()
+for (uid in names(q$device_keys)) {
+    for (did in names(q$device_keys[[uid]])) {
+        if (uid == sA$user_id && did == sA$device_id) {
+            next
+        }
+        targets[[length(targets) + 1L]] <- list(
+            user_id = uid,
+            device_id = did,
+            keys = q$device_keys[[uid]][[did]]$keys
+        )
+    }
+}
+cat("  share targets:", length(targets), "device(s)\n")
+for (t in targets) {
+    cat("   -", t$user_id, "/", t$device_id, "\n")
+}
+
+cat("A claims one OTK per target (batched)\n")
+claim_body <- list()
+for (t in targets) {
+    if (is.null(claim_body[[t$user_id]])) {
+        claim_body[[t$user_id]] <- list()
+    }
+    claim_body[[t$user_id]][[t$device_id]] <- "signed_curve25519"
+}
+cl <- if (length(claim_body)) {
+    mx_keys_claim(sA, claim_body)
+} else {
+    list(one_time_keys = list())
+}
+
+cat("A creates the outbound Megolm session\n")
 megolmA <- mxc_megolm_outbound_new()
 info <- mxc_megolm_outbound_info(megolmA)
+cat("  session_id:", info$session_id, "\n")
 
-cat("A ships m.room_key over Olm via to-device\n")
-room_key_payload <- list(
-    type = "m.room_key",
-    content = list(
-        algorithm = "m.megolm.v1.aes-sha2",
-        room_id = room_id,
-        session_id = info$session_id,
-        session_key = info$session_key
-    ),
-    sender = sA$user_id,
-    recipient = sB$user_id,
-    recipient_keys = list(ed25519 = b_ed),
-    keys = list(ed25519 = idA$ed25519)
-)
-ct <- mxc_olm_encrypt(olmA, charToRaw(mx_canonical_json(room_key_payload)))
-mx_send_to_device(
-    sA, "m.room.encrypted",
-    setNames(
-        list(setNames(list(list(
-            algorithm = "m.olm.v1.curve25519-aes-sha2",
-            sender_key = idA$curve25519,
-            ciphertext = setNames(
-                list(list(type = ct$type, body = ct$body)),
-                b_curve
-            )
-        )), sB$device_id)),
-        sB$user_id
+cat("A opens an Olm session + ships m.room_key to each target\n")
+td_messages <- list()
+shared <- 0L
+skipped <- 0L
+for (t in targets) {
+    otk_obj <- cl$one_time_keys[[t$user_id]][[t$device_id]]
+    if (length(otk_obj) == 0L) {
+        cat("  no OTK available for", t$user_id, "/", t$device_id,
+            "- skipping\n")
+        skipped <- skipped + 1L
+        next
+    }
+    otk_value <- otk_obj[[1L]]$key
+    peer_curve <- t$keys[[paste0("curve25519:", t$device_id)]]
+    peer_ed <- t$keys[[paste0("ed25519:", t$device_id)]]
+
+    olm <- mxc_olm_create_outbound(acctA, peer_curve, otk_value)
+    payload <- list(
+        type = "m.room_key",
+        content = list(
+            algorithm = "m.megolm.v1.aes-sha2",
+            room_id = room_id,
+            session_id = info$session_id,
+            session_key = info$session_key
+        ),
+        sender = sA$user_id,
+        recipient = t$user_id,
+        recipient_keys = list(ed25519 = peer_ed),
+        keys = list(ed25519 = idA$ed25519)
     )
-)
+    ct <- mxc_olm_encrypt(olm, charToRaw(mx_canonical_json(payload)))
+
+    if (is.null(td_messages[[t$user_id]])) {
+        td_messages[[t$user_id]] <- list()
+    }
+    td_messages[[t$user_id]][[t$device_id]] <- list(
+        algorithm = "m.olm.v1.curve25519-aes-sha2",
+        sender_key = idA$curve25519,
+        ciphertext = setNames(
+            list(list(type = ct$type, body = ct$body)),
+            peer_curve
+        )
+    )
+    shared <- shared + 1L
+}
+cat("  shared to", shared, "device(s),", skipped, "skipped\n")
+
+if (shared > 0L) {
+    mx_send_to_device(sA, "m.room.encrypted", td_messages)
+}
 
 cat("A posts a Megolm-encrypted m.room.encrypted to the room\n")
 room_event_plain <- list(
