@@ -362,6 +362,18 @@ render_env_assignments <- function(vars) {
   paste(assignments, collapse = " ")
 }
 
+windows_target <- function() {
+  if(grepl("aarch", R.version$platform)){
+    "aarch64-pc-windows-gnullvm"
+  } else if(grepl("clang", Sys.getenv('R_COMPILED_BY'))){
+    "x86_64-pc-windows-gnullvm"
+  } else if(grepl("i386", R.version$platform)){
+    "i686-pc-windows-gnu"
+  } else {
+    "x86_64-pc-windows-gnu"
+  }
+}
+
 render_platform_makevars <- function(
   cargo_path,
   rustc_path,
@@ -384,24 +396,12 @@ render_platform_makevars <- function(
   unlink(c(makevars, makevars_win), force = TRUE)
 
   if (identical(sysname, "Windows")) {
-    gnu_host <- identical(host_triple, "x86_64-pc-windows-gnu")
-    if (gnu_host) {
-      note(
-        "GNU Windows host detected; building without --target (host = target)."
-      )
-      target_decl <- ""
-      rust_target_lib <- "$(RUST_DIR)/target/release/librust.a"
-      target_flag <- ""
-      cargo_pre <- 'unset CARGO_BUILD_TARGET && export RUSTFLAGS="-C link-self-contained=yes" && '
-    } else {
-      note(
-        "Non-GNU Windows host detected; cross-compiling with --target=x86_64-pc-windows-gnu."
-      )
-      target_decl <- "TARGET = x86_64-pc-windows-gnu"
-      rust_target_lib <- "$(RUST_DIR)/target/$(TARGET)/release/librust.a"
-      target_flag <- " --target=$(TARGET)"
-      cargo_pre <- ""
-    }
+    target <- windows_target()
+    note(paste0("Compiling with --target=", target))
+    target_decl <- paste("TARGET =", target)
+    rust_target_lib <- "$(RUST_DIR)/target/$(TARGET)/release/librust.a"
+    target_flag <- " --target=$(TARGET)"
+    cargo_pre <- ""
     render_makevars(
       file.path("src", "Makevars.win.in"),
       makevars_win,
