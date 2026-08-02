@@ -21,6 +21,12 @@ jobs:
 
       - name: Setup
         uses: eddelbuettel/github-actions/r-ci@master
+        with:
+          # Must be the action input, not `env: BACKEND:`. run.sh reads a
+          # BACKEND env var, but the action exports inputs.backend over it,
+          # so a workflow-level env is silently ignored and the log shows
+          # "Selecting 'bspm'" while CI still goes green.
+          backend: RAPT
 
       - name: Install Rust toolchain
         run: |
