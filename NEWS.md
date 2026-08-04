@@ -1,14 +1,10 @@
-# mx.crypto 0.2.0.1
+# mx.crypto 0.2.1
 
 * `tools/configure.R` now always passes `--target` on Windows and picks
   the triple from the running R: `aarch64-pc-windows-gnullvm` on ARM64,
   `x86_64-pc-windows-gnullvm` for clang-compiled R, `i686-pc-windows-gnu`
   on 32-bit, `x86_64-pc-windows-gnu` otherwise. Fixes the build on
   Windows ARM64. Thanks to Jeroen Ooms (#3).
-* CI: Linux leg uses the `rapt` backend for r2u binary installs.
-* CI: added an opt-in `r-universe` workflow covering Windows ARM64,
-  Linux ARM64, macOS Intel, and Wasm. Runs weekly, on demand, and on
-  pull requests touching `src/` or `tools/configure.R`.
 
 # mx.crypto 0.2.0
 
