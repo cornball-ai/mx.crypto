@@ -27,9 +27,10 @@ no reverse dependencies on CRAN.
 * r-universe reusable build: 15 configurations covering Linux x86_64
   and arm64, Windows x86_64 and arm64, macOS arm64 and Intel, and
   Wasm, across R-release, R-devel, and R-oldrel. All passing, including
-  the two Windows arm64 legs this release exists to fix.
-* Windows (local box): R 4.6.0 and R-devel (4.7.0 pre-release),
-  `R CMD check --as-cran`
+  the two Windows arm64 legs this release exists to fix, and the three
+  Windows x86_64 legs that confirm the always-`--target` change did not
+  regress the platform that already worked.
+* win-builder R-devel and R-release
 
 ## R CMD check --as-cran results
 
