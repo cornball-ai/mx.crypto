@@ -12,3 +12,4 @@
 ^src/rust/vendor$
 ^src/rust/\.cargo$
 ^src/rust/\.cargo-home$
+^tools/check_tarball\.sh$
