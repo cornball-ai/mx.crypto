@@ -30,7 +30,6 @@ no reverse dependencies on CRAN.
   the two Windows arm64 legs this release exists to fix, and the three
   Windows x86_64 legs that confirm the always-`--target` change did not
   regress the platform that already worked.
-* win-builder R-devel and R-release
 
 ## R CMD check --as-cran results
 
