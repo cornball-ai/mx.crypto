@@ -1,0 +1,25 @@
+name: r-universe
+
+# The r-universe build is the only CI we have that covers Windows ARM64,
+# Linux ARM64, and macOS Intel. It caught the configure.R target bug fixed
+# in #3, which nothing in ci.yaml could reach.
+#
+# It is a ~12-leg build with a 60 minute timeout, so it does not run on
+# every commit. The matrix is fixed by upstream and deliberately not
+# configurable; only the triggers below are ours.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * 1'
+  pull_request:
+    paths:
+      - 'tools/configure.R'
+      - 'src/**'
+      - '.github/workflows/r-universe-test.yml'
+
+jobs:
+  build:
+    name: R-universe testing
+    uses: r-universe-org/workflows/.github/workflows/build.yml@v3
+    with:
+      universe: ${{ github.repository_owner }}

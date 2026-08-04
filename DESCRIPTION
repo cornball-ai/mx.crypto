@@ -1,7 +1,7 @@
 Package: mx.crypto
 Type: Package
 Title: Matrix End-to-End Encryption Primitives
-Version: 0.2.0
+Version: 0.2.0.1
 Date: 2026-05-13
 Authors@R: c(
     person("Troy", "Hernandez", role = c("aut", "cre"),
