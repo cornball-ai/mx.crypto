@@ -1,10 +1,15 @@
 # mx.crypto 0.2.1
 
-* `tools/configure.R` now always passes `--target` on Windows and picks
-  the triple from the running R: `aarch64-pc-windows-gnullvm` on ARM64,
-  `x86_64-pc-windows-gnullvm` for clang-compiled R, `i686-pc-windows-gnu`
-  on 32-bit, `x86_64-pc-windows-gnu` otherwise. Fixes the build on
-  Windows ARM64. Thanks to Jeroen Ooms (#3).
+* `tools/configure.R` picks the Rust target on Windows from the running
+  R rather than from the host triple: `aarch64-pc-windows-gnullvm` on
+  ARM64, `x86_64-pc-windows-gnullvm` for clang-compiled R,
+  `i686-pc-windows-gnu` on 32-bit, `x86_64-pc-windows-gnu` otherwise.
+  It is passed as `--target` whenever it differs from the host. Fixes
+  the build on Windows ARM64. Thanks to Jeroen Ooms (#3).
+* On a Windows GNU host building for itself, the Rust build stays
+  native and keeps `-C link-self-contained=yes`. Passing `--target`
+  stops cargo applying `RUSTFLAGS` to build scripts and proc-macros,
+  which leaves them unexecutable on the Rtools toolchain.
 
 # mx.crypto 0.2.0
 

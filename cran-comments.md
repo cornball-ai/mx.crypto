@@ -26,10 +26,9 @@ no reverse dependencies on CRAN.
 * GitHub Actions (ubuntu-latest, macos-latest) via r-ci, R-release
 * r-universe reusable build: 15 configurations covering Linux x86_64
   and arm64, Windows x86_64 and arm64, macOS arm64 and Intel, and
-  Wasm, across R-release, R-devel, and R-oldrel. All passing, including
-  the two Windows arm64 legs this release exists to fix, and the three
-  Windows x86_64 legs that confirm the always-`--target` change did not
-  regress the platform that already worked.
+  Wasm, across R-release, R-devel, and R-oldrel, including the two
+  Windows arm64 legs this release exists to fix.
+* win-builder R-devel
 
 ## R CMD check --as-cran results
 
