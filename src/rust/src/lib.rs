@@ -11,8 +11,8 @@ use roxido::*;
 
 use base64::{Engine as _, engine::general_purpose::STANDARD as B64};
 use vodozemac::megolm::{
-    GroupSession, GroupSessionPickle, InboundGroupSession, InboundGroupSessionPickle,
-    MegolmMessage, SessionConfig as MegolmSessionConfig, SessionKey,
+    ExportedSessionKey, GroupSession, GroupSessionPickle, InboundGroupSession,
+    InboundGroupSessionPickle, MegolmMessage, SessionConfig as MegolmSessionConfig, SessionKey,
 };
 use vodozemac::olm::{
     Account, AccountPickle, OlmMessage, Session, SessionConfig, SessionPickle,
@@ -301,6 +301,34 @@ fn mxc_megolm_inbound_new(session_key: &str) {
     let sk = SessionKey::from_base64(session_key).stop_str("invalid session_key base64");
     let igs = InboundGroupSession::new(&sk, MegolmSessionConfig::version_1());
     RExternalPtr::encode(igs, TAG_INBOUND_GROUP_SESSION, pc)
+}
+
+#[roxido]
+fn mxc_megolm_inbound_import(session_key: &str) {
+    let sk = ExportedSessionKey::from_base64(session_key)
+        .stop_str("invalid exported session_key base64");
+    let igs = InboundGroupSession::import(&sk, MegolmSessionConfig::version_1());
+    RExternalPtr::encode(igs, TAG_INBOUND_GROUP_SESSION, pc)
+}
+
+#[roxido]
+fn mxc_megolm_inbound_info(igs: &RObject) {
+    let ext = igs.as_external_ptr().stop_str("expected externalptr");
+    let g: &InboundGroupSession = ext.decode_ref();
+    let sid = g.session_id();
+    let idx = g.first_known_index() as i32;
+    let out = RList::with_names(&["session_id", "first_known_index"], pc);
+    out.set(0, sid.as_str().to_r(pc)).stop();
+    out.set(1, idx.to_r(pc)).stop();
+    out
+}
+
+#[roxido]
+fn mxc_megolm_inbound_export(igs: &RObject) {
+    let ext = igs.as_external_ptr().stop_str("expected externalptr");
+    let g: &InboundGroupSession = ext.decode_ref();
+    let key = g.export_at_first_known_index().to_base64();
+    key.as_str().to_r(pc)
 }
 
 #[roxido]

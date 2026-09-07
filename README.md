@@ -7,8 +7,10 @@ pure-Rust crypto crate). Pairs with
 transport.
 
 mx.crypto is crypto only. It does not make HTTP calls, does not
-canonicalise JSON, and does not implement cross-signing or SAS
-verification (yet).
+canonicalise JSON, and does not orchestrate Matrix protocols. It exposes
+encrypted Ed25519 signing-key primitives for cross-signing and forwarded
+Megolm session import/export; `mx.client` owns the protocol and trust policy.
+SAS verification is not implemented.
 
 ## Install
 
@@ -92,7 +94,7 @@ above this layer.
 
 ## Status
 
-**0.2.0** (GitHub `main`, 2026-05-13). Not on CRAN yet.
+**0.2.1.1** (GitHub `main`, 2026-09-04). Not on CRAN yet.
 
 - 0.1.0 was the initial release, GitHub-only.
 - 0.2.0 adds `mxc_ed25519_verify` and the two `mxc_verify_*` helpers,
@@ -100,6 +102,9 @@ above this layer.
   (`SessionCreationError` is now propagated to R rather than silently
   encoded as a `Session` external pointer), and ships an audit
   vignette + `SECURITY.md`. See `NEWS.md` for the full changelog.
+- 0.2.1.1 adds encrypted Ed25519 signing-key handles for cross-signing and
+  forwarded inbound Megolm session import, export, and identity inspection.
+  The corresponding Matrix protocol orchestration lives in `mx.client`.
 
 Tested on Ubuntu 24.04 and macOS via the GitHub Actions r-ci workflow,
 plus a live homeserver round-trip exercise at

@@ -38,6 +38,22 @@ info2 <- mxc_megolm_outbound_info(gs)
 expect_equal(info2$message_index, 2L)
 expect_identical(info2$session_id, info$session_id)
 
+# Forwarded-key export/import retains the session identity and first known
+# index, and the imported receiver decrypts later messages.
+in_info <- mxc_megolm_inbound_info(igs)
+expect_identical(in_info$session_id, info$session_id)
+expect_equal(in_info$first_known_index, 0L)
+forwarded_key <- mxc_megolm_inbound_export(igs)
+expect_true(is.character(forwarded_key) && nzchar(forwarded_key))
+forwarded <- mxc_megolm_inbound_import(forwarded_key)
+forwarded_info <- mxc_megolm_inbound_info(forwarded)
+expect_identical(forwarded_info$session_id, info$session_id)
+expect_equal(forwarded_info$first_known_index, 0L)
+ct_forwarded <- mxc_megolm_encrypt(gs, charToRaw("after forwarding"))
+dec_forwarded <- mxc_megolm_decrypt(forwarded, ct_forwarded)
+expect_identical(rawToChar(dec_forwarded$plaintext), "after forwarding")
+expect_error(mxc_megolm_inbound_import("not-a-session-key"))
+
 # Pickle round-trip ----------------------------------------------------
 
 key <- as.raw(seq_len(32) - 1L)

@@ -43,8 +43,10 @@ narrow but load-bearing:
   error, no partial state mutation) rather than returning ambiguous
   values.
 
-Out of scope for the wrapper: cross-signing, SAS verification, and the
-v2 MAC migration. Those land in a higher layer.
+Out of scope for the wrapper: cross-signing protocol/trust orchestration,
+SAS verification, and the v2 MAC migration. The wrapper now exposes encrypted
+Ed25519 signing-key primitives; policy and Matrix HTTP operations remain in a
+higher layer.
 
 ## 2. Dependency baseline: vodozemac 0.10.0
 
@@ -411,7 +413,8 @@ Not in scope for this audit; tracked for later versions.
 
 - Wire `mxc_verify_device_keys` + `mxc_verify_one_time_key` into the
   `e2e_demo.R` broadcast loop so the demo reflects best practice.
-- TOFU / cross-signing helpers (master / self / user signing keys).
+- Cross-signing trust and Matrix protocol orchestration (the raw signing-key
+  helpers landed in 0.2.1.1).
 - SAS verification (`m.key.verification.start` etc.).
 - v2 Olm MAC migration when the Matrix spec lands.
 - Track upstream vodozemac for any future disclosures and pull the

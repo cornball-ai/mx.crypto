@@ -40,8 +40,10 @@ The full audit walkthrough is in `vignettes/security-audit.Rmd`.
   key the device claims for itself; it does not check that key
   against any pre-known trust store. Pin identities at a higher
   layer.
-- **Cross-signing.** Master / self / user signing keys are out of
-  scope.
+- **Cross-signing trust.** This package can create, encrypt, restore, and use
+  Ed25519 signing keys, but it does not query/upload Matrix cross-signing
+  objects or decide whether a master key is trusted. Those policies belong to
+  `mx.client`.
 - **SAS verification.** Out of scope.
 - **Replay across pickles.** Restoring a stale pickle is the caller's
   responsibility to detect.
