@@ -1,3 +1,14 @@
+# mx.crypto 0.2.1.1
+
+* New: `mxc_signing_key_*()` provides durable Ed25519 signing keys for
+  Matrix cross-signing. Private state uses the same encrypted pickle format
+  and 32-byte local store key as device accounts.
+* New: `mxc_megolm_inbound_export()`,
+  `mxc_megolm_inbound_import()`, and `mxc_megolm_inbound_info()` implement
+  the cryptographic half of `m.forwarded_room_key`, preserving the first
+  known message index and marking imported sessions unverified as required
+  by Megolm.
+
 # mx.crypto 0.2.1
 
 * `tools/configure.R` picks the Rust target on Windows from the running
