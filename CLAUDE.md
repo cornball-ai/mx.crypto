@@ -50,9 +50,11 @@ Hand-written wrappers in `R/account.R` etc. call those.
 - MSRV declared in `SystemRequirements: rustc (>= 1.85)` and matches
   vodozemac's `rust-version`.
 
-## Out of scope for 0.1.0
+## Layer boundary
 
-- `m.room_key_request` / `m.forwarded_room_key`
-- Cross-signing (master/self/user-signing keys)
+- HTTP and `m.room_key_request` orchestration remain in `mx.api` / `mx.client`.
+  This package supplies forwarded Megolm session import/export.
+- Cross-signing upload, chain policy, and user trust remain in `mx.client`.
+  This package supplies the encrypted Ed25519 signing-key handles.
 - SAS verification (`m.key.verification.*`)
 - libolm-format pickle import (modern serde pickles only)

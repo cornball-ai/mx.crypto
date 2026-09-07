@@ -80,6 +80,42 @@ mxc_megolm_inbound_new <- function(session_key) {
   .Call(.mxc_megolm_inbound_new, as.character(session_key))
 }
 
+#' Import a forwarded inbound Megolm session
+#'
+#' Imports the exported session-key format carried by
+#' `m.forwarded_room_key`. Unlike [mxc_megolm_inbound_new()], the resulting
+#' session does not treat the original sender signature as verified; the
+#' caller must validate the forwarding chain and sender identity.
+#'
+#' @param session_key Base64 exported session key.
+#' @return An InboundGroupSession external pointer.
+#' @export
+mxc_megolm_inbound_import <- function(session_key) {
+  .Call(.mxc_megolm_inbound_import, as.character(session_key))
+}
+
+#' Inspect an inbound Megolm session
+#'
+#' @param igs An InboundGroupSession.
+#' @return Named list with `session_id` and `first_known_index`.
+#' @export
+mxc_megolm_inbound_info <- function(igs) {
+  .Call(.mxc_megolm_inbound_info, igs)
+}
+
+#' Export an inbound Megolm session for forwarding
+#'
+#' Exports at the first known message index, retaining the maximum history
+#' this recipient can legitimately share. The result is the `session_key`
+#' value for `m.forwarded_room_key`.
+#'
+#' @param igs An InboundGroupSession.
+#' @return Base64 exported session key.
+#' @export
+mxc_megolm_inbound_export <- function(igs) {
+  .Call(.mxc_megolm_inbound_export, igs)
+}
+
 #' Decrypt a room message
 #'
 #' @param igs An InboundGroupSession.
