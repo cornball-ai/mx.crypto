@@ -1,3 +1,6 @@
+// SAS wrappers live separately from the Olm/Megolm implementation.
+mod sas;
+
 // mx.crypto: Olm + Megolm primitives wrapping vodozemac for R.
 //
 // Stateful objects (Account, Session, GroupSession, InboundGroupSession)
