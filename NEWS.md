@@ -1,3 +1,14 @@
+# mx.crypto 0.2.1.2
+
+* New: ephemeral SAS key agreement, display-byte derivation, and constant-time
+  MAC verification through vodozemac. SAS handles reject wrong pointer types,
+  low-order peer keys, and repeated use of an ephemeral secret. Protocol
+  orchestration and durable user trust remain in mx.client.
+
+* New: SHA-256 SAS commitments use sha2 0.10.9, now declared directly.
+  This crate was already bundled and locked through vodozemac; no vendored
+  source bytes or R dependencies were added.
+
 # mx.crypto 0.2.1.1
 
 * New: `mxc_signing_key_*()` provides durable Ed25519 signing keys for
