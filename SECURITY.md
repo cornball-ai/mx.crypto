@@ -44,7 +44,10 @@ The full audit walkthrough is in `vignettes/security-audit.Rmd`.
   Ed25519 signing keys, but it does not query/upload Matrix cross-signing
   objects or decide whether a master key is trusted. Those policies belong to
   `mx.client`.
-- **SAS verification.** Out of scope.
+- **SAS identity decisions.** The `mxc_sas_*()` primitives provide ephemeral
+  key agreement, commitments, display bytes, and MAC verification. Protocol
+  negotiation, transaction binding, human comparison, timeouts, and persistent
+  trust belong to `mx.client`; a primitive call alone does not verify a user.
 - **Replay across pickles.** Restoring a stale pickle is the caller's
   responsibility to detect.
 

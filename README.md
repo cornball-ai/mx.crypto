@@ -10,7 +10,9 @@ mx.crypto is crypto only. It does not make HTTP calls, does not
 canonicalise JSON, and does not orchestrate Matrix protocols. It exposes
 encrypted Ed25519 signing-key primitives for cross-signing and forwarded
 Megolm session import/export; `mx.client` owns the protocol and trust policy.
-SAS verification is not implemented.
+SAS key agreement, SHA-256 commitments, display bytes, and constant-time
+MAC verification are available through `mxc_sas_*()`. Interactive protocol
+handling, human confirmation, and durable trust remain in `mx.client`.
 
 ## Install
 

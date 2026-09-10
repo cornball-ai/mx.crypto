@@ -1,0 +1,37 @@
+library(mx.crypto)
+local({
+    alice <- mxc_sas_new()
+    bob <- mxc_sas_new()
+    ap <- mxc_sas_public(alice)
+    bp <- mxc_sas_public(bob)
+    expect_identical(nchar(ap), 43L)
+    expect_false(identical(ap, bp))
+    expect_error(mxc_sas_bytes(alice, "context"), pattern = "not established")
+    expect_error(mxc_sas_public(mxc_account_new()), pattern = "SAS handle")
+    expect_error(mxc_sas_public(NULL), pattern = "SAS handle")
+    expect_error(mxc_sas_establish(alice, "bad"), pattern = "public key")
+    mxc_sas_establish(alice, bp)
+    mxc_sas_establish(bob, ap)
+    expect_identical(mxc_sas_public(alice), ap)
+    expect_identical(mxc_sas_bytes(alice, "context"),
+        mxc_sas_bytes(bob, "context"))
+    expect_identical(length(mxc_sas_bytes(alice, "context")), 6L)
+    expect_false(identical(mxc_sas_bytes(alice, "context"),
+        mxc_sas_bytes(bob, "changed context")))
+    expect_error(mxc_sas_establish(alice, bp), pattern = "already consumed")
+    mac <- mxc_sas_mac(alice, "public key", "direction")
+    expect_true(mxc_sas_verify_mac(bob, "public key", "direction", mac))
+    expect_false(mxc_sas_verify_mac(bob, "wrong key", "direction", mac))
+    expect_false(mxc_sas_verify_mac(bob, "public key", "wrong direction", mac))
+    expect_false(mxc_sas_verify_mac(bob, "public key", "direction", "garbage"))
+    expect_false(mxc_sas_verify_mac(bob, "public key", "direction", "AA"))
+    expect_error(mxc_sas_mac(mxc_sas_new(), "key", "info"),
+        pattern = "not established")
+    low <- mxc_sas_new()
+    expect_error(mxc_sas_establish(low, paste(rep("A", 43L), collapse = "")),
+        pattern = "non-contributory")
+    expect_error(mxc_sas_establish(low, bp), pattern = "already consumed")
+    # A serialized external pointer must fail safely, not be decoded as Rust.
+    restored <- unserialize(serialize(alice, NULL))
+    expect_error(mxc_sas_public(restored), pattern = "live SAS handle")
+})
