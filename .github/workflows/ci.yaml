@@ -39,8 +39,14 @@ jobs:
       - name: Install vignette builder
         # simplermarkdown is in Suggests, not Imports, so install_deps
         # skips it. R CMD check needs it present to recognise the
-        # .Rmd vignette as a vignette and not a stray file.
+        # Markdown source as a vignette and not a stray file.
         run: Rscript -e 'install.packages("simplermarkdown")'
 
       - name: Test
         run: ./run.sh run_tests
+        env:
+          R_BUILD_ARGS: "--no-manual"
+          R_CHECK_ARGS: "--no-manual --as-cran"
+
+      - name: Check warnings and SAS coverage
+        run: Rscript .github/check-results.R

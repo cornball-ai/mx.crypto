@@ -24,7 +24,7 @@ Please do not file a public GitHub issue first.
 |---|---|---|
 | vodozemac | 0.10.0 | Contains the fix for the Soatok 2026-02 disclosure of non-contributory Diffie-Hellman acceptance. Verified in the vendored source at `src/types/curve25519.rs`. |
 
-The full audit walkthrough is in `vignettes/security-audit.Rmd`.
+The full audit walkthrough is in `vignettes/security-audit.md`.
 
 ## What this package validates
 
@@ -77,6 +77,6 @@ implications:
 ## Bumping vodozemac
 
 When pulling a new vodozemac into the vendor tarball, re-read
-`vignettes/security-audit.Rmd` section 2 and confirm the
+`vignettes/security-audit.md` section 2 and confirm the
 contributory-DH check and strict-Ed25519 default are still in place.
 Add a `NEWS.md` line noting the bump.
