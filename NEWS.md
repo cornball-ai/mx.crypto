@@ -1,3 +1,8 @@
+# mx.crypto 0.2.2
+
+* Release the cross-signing, forwarded Megolm, and SAS primitives added in
+  development versions 0.2.1.1 and 0.2.1.2. No code changes since 0.2.1.2.
+
 # mx.crypto 0.2.1.2
 
 * New: ephemeral SAS key agreement, display-byte derivation, and constant-time
