@@ -1,3 +1,15 @@
+# mx.crypto 0.2.2.1
+
+* Fix: decode Olm message bodies with padding-indifferent base64. libolm
+  padded them; vodozemac (matrix-dart-sdk 10.x, Element) emits them
+  unpadded, so the previous canonical-padding decoder rejected every
+  inbound body whose length was not a multiple of 4 ("prekey body is not
+  valid base64" / "olm body is not valid base64"), dropping it. Both
+  `mxc_olm_create_inbound()` and `mxc_olm_decrypt()` now accept padded and
+  unpadded bodies; encoding stays padded, which peers already accept. This
+  restores inbound Olm from modern (vodozemac) clients, including MatrixRTC
+  call encryption keys.
+
 # mx.crypto 0.2.2
 
 * Release the cross-signing, forwarded Megolm, and SAS primitives added in
