@@ -12,7 +12,24 @@ mod sas;
 roxido_registration!();
 use roxido::*;
 
-use base64::{Engine as _, engine::general_purpose::STANDARD as B64};
+use base64::{
+    alphabet,
+    engine::{
+        general_purpose::{GeneralPurpose, GeneralPurposeConfig},
+        DecodePaddingMode,
+    },
+    Engine as _,
+};
+
+// Olm message bodies cross the wire as base64. libolm padded them, but
+// vodozemac (matrix-dart-sdk 10.x, Element) emits them UNPADDED, so a
+// canonical-padding decoder rejects every body whose length is not a
+// multiple of 4. Decode indifferently so bodies from either side open;
+// encoding stays canonical (padded), which our peers already accept.
+const B64: GeneralPurpose = GeneralPurpose::new(
+    &alphabet::STANDARD,
+    GeneralPurposeConfig::new().with_decode_padding_mode(DecodePaddingMode::Indifferent),
+);
 use vodozemac::megolm::{
     ExportedSessionKey, GroupSession, GroupSessionPickle, InboundGroupSession,
     InboundGroupSessionPickle, MegolmMessage, SessionConfig as MegolmSessionConfig, SessionKey,
