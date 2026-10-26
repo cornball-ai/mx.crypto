@@ -1,3 +1,10 @@
+# mx.crypto 0.2.2.2
+
+* Add Matrix v2 attachment encryption with fresh AES-256-CTR keys and
+  nonces, and SHA-256 verification before decryption. These byte-oriented
+  primitives use RustCrypto and return metadata for an encrypted room event;
+  they do not perform HTTP requests or modify account state.
+
 # mx.crypto 0.2.2.1
 
 * Fix: decode Olm message bodies with padding-indifferent base64. libolm
