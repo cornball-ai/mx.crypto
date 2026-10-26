@@ -1,5 +1,6 @@
 // SAS wrappers live separately from the Olm/Megolm implementation.
 mod sas;
+mod attachment;
 
 // mx.crypto: Olm + Megolm primitives wrapping vodozemac for R.
 //

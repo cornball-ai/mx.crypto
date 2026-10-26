@@ -41,7 +41,7 @@ check_results <- function() {
     expected <- unname(read.dcf("DESCRIPTION")[1, "Version"])
     stopifnot(identical(as.character(utils::packageVersion(pkg)), expected))
     cat("Testing checked build:", find.package(pkg), expected, "\n")
-    for (file in c("test_sas.R", "test_sas_commitment.R")) {
+    for (file in c("test_sas.R", "test_sas_commitment.R", "test_attachment.R")) {
         result <- tinytest::run_test_file(file.path("inst", "tinytest", file),
             at_home = FALSE, verbose = 0, color = FALSE)
         print(result)
