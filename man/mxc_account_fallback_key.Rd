@@ -16,3 +16,8 @@ Generates a fallback curve25519 key, which the homeserver hands out
 when an OTK pool is exhausted. Returns the freshly generated key.
 Calling it again rotates the previous fallback.
 }
+\examples{
+acct <- mxc_account_new()
+fk <- mxc_account_fallback_key(acct)
+fk$curve25519
+}

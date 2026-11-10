@@ -16,3 +16,10 @@ An Account external pointer.
 \description{
 Restore an Account from an encrypted pickle
 }
+\examples{
+acct <- mxc_account_new()
+key <- as.raw(1:32)
+blob <- mxc_account_pickle(acct, key)
+restored <- mxc_account_unpickle(blob, key)
+identical(mxc_account_identity_keys(restored), mxc_account_identity_keys(acct))
+}

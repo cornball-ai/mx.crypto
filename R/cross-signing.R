@@ -11,6 +11,9 @@
 #' as a string or raw vector.
 #'
 #' @return An opaque signing-key handle.
+#' @examples
+#' sk <- mxc_signing_key_new()
+#' mxc_signing_key_public(sk)
 #' @export
 mxc_signing_key_new <- function() {
   mxc_account_new()
@@ -20,6 +23,10 @@ mxc_signing_key_new <- function() {
 #'
 #' @param key A signing-key handle.
 #' @return Unpadded base64 Ed25519 public key.
+#' @examples
+#' sk <- mxc_signing_key_new()
+#' pub <- mxc_signing_key_public(sk)
+#' nchar(pub)
 #' @export
 mxc_signing_key_public <- function(key) {
   mxc_account_identity_keys(key)$ed25519
@@ -30,6 +37,11 @@ mxc_signing_key_public <- function(key) {
 #' @param key A signing-key handle.
 #' @param canonical_json A canonical JSON character string.
 #' @return Unpadded base64 Ed25519 signature.
+#' @examples
+#' sk <- mxc_signing_key_new()
+#' payload <- '{"usage":["master"],"user_id":"@alice:example.org"}'
+#' sig <- mxc_signing_key_sign(sk, payload)
+#' mxc_ed25519_verify(mxc_signing_key_public(sk), charToRaw(payload), sig)
 #' @export
 mxc_signing_key_sign <- function(key, canonical_json) {
   mxc_account_sign(key, canonical_json)
@@ -44,6 +56,11 @@ mxc_signing_key_sign <- function(key, canonical_json) {
 #' @param key A signing-key handle.
 #' @param pickle_key A 32-byte raw encryption key.
 #' @return Encrypted base64 pickle.
+#' @examples
+#' sk <- mxc_signing_key_new()
+#' pickle_key <- as.raw(1:32)
+#' blob <- mxc_signing_key_pickle(sk, pickle_key)
+#' nchar(blob)
 #' @export
 mxc_signing_key_pickle <- function(key, pickle_key) {
   mxc_account_pickle(key, pickle_key)
@@ -54,6 +71,12 @@ mxc_signing_key_pickle <- function(key, pickle_key) {
 #' @param blob An encrypted pickle from [mxc_signing_key_pickle()].
 #' @param pickle_key The same 32-byte raw encryption key.
 #' @return An opaque signing-key handle.
+#' @examples
+#' sk <- mxc_signing_key_new()
+#' pickle_key <- as.raw(1:32)
+#' blob <- mxc_signing_key_pickle(sk, pickle_key)
+#' restored <- mxc_signing_key_unpickle(blob, pickle_key)
+#' identical(mxc_signing_key_public(restored), mxc_signing_key_public(sk))
 #' @export
 mxc_signing_key_unpickle <- function(blob, pickle_key) {
   mxc_account_unpickle(blob, pickle_key)

@@ -20,3 +20,9 @@ Restore with [mxc_account_unpickle]. Pickle after every state change
 that you want to survive a restart (OTK generation, fallback key
 rotation, mark-published).
 }
+\examples{
+acct <- mxc_account_new()
+key <- as.raw(1:32)
+blob <- mxc_account_pickle(acct, key)
+nchar(blob)
+}

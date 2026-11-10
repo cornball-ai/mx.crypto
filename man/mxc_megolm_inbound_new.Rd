@@ -18,3 +18,9 @@ stores the resulting object indexed by `(sender_curve25519,
 session_id)` and re-uses it to decrypt incoming messages on that
 session.
 }
+\examples{
+gs <- mxc_megolm_outbound_new()
+igs <- mxc_megolm_inbound_new(mxc_megolm_outbound_info(gs)$session_key)
+ct <- mxc_megolm_encrypt(gs, charToRaw("hello room"))
+mxc_megolm_decrypt(igs, ct)$message_index
+}

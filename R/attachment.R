@@ -7,6 +7,10 @@
 #' @param data A raw vector of plaintext bytes.
 #' @return A list with ciphertext \code{data} and Matrix v2 \code{file}
 #'   metadata. The metadata contains the secret decryption key.
+#' @examples
+#' enc <- mxc_attachment_encrypt(charToRaw("hello, matrix"))
+#' length(enc$data)
+#' enc$file$hashes$sha256
 #' @export
 mxc_attachment_encrypt <- function(data) {
     out <- .Call(.attachment__mxc_attachment_encrypt, data)
@@ -26,6 +30,11 @@ mxc_attachment_encrypt <- function(data) {
 #'   \code{iv}, \code{hashes}, and \code{v}. An optional \code{url} is ignored.
 #' @return A raw vector of plaintext bytes. Invalid metadata or a digest
 #'   mismatch raises an error without returning plaintext.
+#' @examples
+#' plain <- charToRaw("hello, matrix")
+#' enc <- mxc_attachment_encrypt(plain)
+#' out <- mxc_attachment_decrypt(enc$data, enc$file)
+#' rawToChar(out)
 #' @export
 mxc_attachment_decrypt <- function(data, file) {
     scalar <- function(x) is.character(x) && length(x) == 1L && !is.na(x) && nzchar(x)

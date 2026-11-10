@@ -16,3 +16,11 @@ An outbound GroupSession external pointer.
 \description{
 Restore an outbound group session from a pickle
 }
+\examples{
+key <- as.raw(1:32)
+gs <- mxc_megolm_outbound_new()
+blob <- mxc_megolm_outbound_pickle(gs, key)
+gs2 <- mxc_megolm_outbound_unpickle(blob, key)
+identical(mxc_megolm_outbound_info(gs2)$session_id,
+          mxc_megolm_outbound_info(gs)$session_id)
+}

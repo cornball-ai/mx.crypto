@@ -14,3 +14,8 @@ Unpadded base64 Ed25519 public key.
 \description{
 Read a signing key's public Ed25519 key
 }
+\examples{
+sk <- mxc_signing_key_new()
+pub <- mxc_signing_key_public(sk)
+nchar(pub)
+}

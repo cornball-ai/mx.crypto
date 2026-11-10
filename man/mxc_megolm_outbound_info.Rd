@@ -16,3 +16,10 @@ Named list: `session_id` (str), `session_key` (str),
 Returns the `session_id`, current `session_key` (the value to ship
 via `m.room_key` to recipient devices), and `message_index`.
 }
+\examples{
+gs <- mxc_megolm_outbound_new()
+info <- mxc_megolm_outbound_info(gs)
+info$message_index
+# Ship info$session_key to each recipient device in m.room_key
+igs <- mxc_megolm_inbound_new(info$session_key)
+}

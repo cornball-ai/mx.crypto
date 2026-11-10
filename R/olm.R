@@ -8,6 +8,13 @@
 #' @param peer_curve25519 Peer's curve25519 identity key (base64).
 #' @param peer_otk Peer's one-time key (base64).
 #' @return An Olm Session external pointer.
+#' @examples
+#' alice <- mxc_account_new()
+#' bob <- mxc_account_new()
+#' mxc_account_generate_one_time_keys(bob, 1L)
+#' bob_key <- mxc_account_identity_keys(bob)$curve25519
+#' bob_otk <- mxc_account_one_time_keys(bob)[[1]]
+#' sess <- mxc_olm_create_outbound(alice, bob_key, bob_otk)
 #' @export
 mxc_olm_create_outbound <- function(account, peer_curve25519, peer_otk) {
   .Call(
@@ -28,6 +35,17 @@ mxc_olm_create_outbound <- function(account, peer_curve25519, peer_otk) {
 #' @param peer_curve25519 Sender's curve25519 identity key (base64).
 #' @param prekey_b64 Body of the pre-key message (base64).
 #' @return Named list: `session` (external pointer) and `plaintext` (raw).
+#' @examples
+#' alice <- mxc_account_new()
+#' bob <- mxc_account_new()
+#' mxc_account_generate_one_time_keys(bob, 1L)
+#' sess_a <- mxc_olm_create_outbound(alice,
+#'   mxc_account_identity_keys(bob)$curve25519,
+#'   mxc_account_one_time_keys(bob)[[1]])
+#' msg <- mxc_olm_encrypt(sess_a, charToRaw("hello bob"))
+#' res <- mxc_olm_create_inbound(bob,
+#'   mxc_account_identity_keys(alice)$curve25519, msg$body)
+#' rawToChar(res$plaintext)
 #' @export
 mxc_olm_create_inbound <- function(account, peer_curve25519, prekey_b64) {
   .Call(
@@ -43,6 +61,15 @@ mxc_olm_create_inbound <- function(account, peer_curve25519, prekey_b64) {
 #' @param session An Olm Session.
 #' @param plaintext A `raw` vector.
 #' @return Named list: `type` (`0L` pre-key, `1L` normal) and `body` (base64).
+#' @examples
+#' alice <- mxc_account_new()
+#' bob <- mxc_account_new()
+#' mxc_account_generate_one_time_keys(bob, 1L)
+#' sess <- mxc_olm_create_outbound(alice,
+#'   mxc_account_identity_keys(bob)$curve25519,
+#'   mxc_account_one_time_keys(bob)[[1]])
+#' msg <- mxc_olm_encrypt(sess, charToRaw("hello bob"))
+#' msg$type
 #' @export
 mxc_olm_encrypt <- function(session, plaintext) {
   if (!is.raw(plaintext)) {
@@ -57,6 +84,18 @@ mxc_olm_encrypt <- function(session, plaintext) {
 #' @param type Message type: `0L` for pre-key, `1L` for normal.
 #' @param body Ciphertext (base64).
 #' @return A `raw` vector of plaintext bytes.
+#' @examples
+#' alice <- mxc_account_new()
+#' bob <- mxc_account_new()
+#' mxc_account_generate_one_time_keys(bob, 1L)
+#' sess_a <- mxc_olm_create_outbound(alice,
+#'   mxc_account_identity_keys(bob)$curve25519,
+#'   mxc_account_one_time_keys(bob)[[1]])
+#' msg <- mxc_olm_encrypt(sess_a, charToRaw("hello bob"))
+#' sess_b <- mxc_olm_create_inbound(bob,
+#'   mxc_account_identity_keys(alice)$curve25519, msg$body)$session
+#' reply <- mxc_olm_encrypt(sess_b, charToRaw("hi alice"))
+#' rawToChar(mxc_olm_decrypt(sess_a, reply$type, reply$body))
 #' @export
 mxc_olm_decrypt <- function(session, type, body) {
   .Call(
@@ -74,6 +113,15 @@ mxc_olm_decrypt <- function(session, type, body) {
 #' @param session An Olm Session.
 #' @param key 32-byte raw vector.
 #' @return Base64 string.
+#' @examples
+#' alice <- mxc_account_new()
+#' bob <- mxc_account_new()
+#' mxc_account_generate_one_time_keys(bob, 1L)
+#' sess <- mxc_olm_create_outbound(alice,
+#'   mxc_account_identity_keys(bob)$curve25519,
+#'   mxc_account_one_time_keys(bob)[[1]])
+#' key <- as.raw(1:32)
+#' blob <- mxc_olm_session_pickle(sess, key)
 #' @export
 mxc_olm_session_pickle <- function(session, key) {
   if (!is.raw(key) || length(key) != 32L) {
@@ -87,6 +135,17 @@ mxc_olm_session_pickle <- function(session, key) {
 #' @param blob Base64 string produced by [mxc_olm_session_pickle].
 #' @param key 32-byte raw vector.
 #' @return An Olm Session external pointer.
+#' @examples
+#' alice <- mxc_account_new()
+#' bob <- mxc_account_new()
+#' mxc_account_generate_one_time_keys(bob, 1L)
+#' sess <- mxc_olm_create_outbound(alice,
+#'   mxc_account_identity_keys(bob)$curve25519,
+#'   mxc_account_one_time_keys(bob)[[1]])
+#' key <- as.raw(1:32)
+#' blob <- mxc_olm_session_pickle(sess, key)
+#' sess2 <- mxc_olm_session_unpickle(blob, key)
+#' msg <- mxc_olm_encrypt(sess2, charToRaw("hello bob"))
 #' @export
 mxc_olm_session_unpickle <- function(blob, key) {
   if (!is.raw(key) || length(key) != 32L) {

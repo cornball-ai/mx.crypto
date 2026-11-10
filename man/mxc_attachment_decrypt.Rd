@@ -20,3 +20,9 @@ Verifies the ciphertext's SHA-256 digest before returning plaintext.
 The metadata must come from an authenticated encrypted room event;
 the public digest alone does not authenticate the key or the sender.
 }
+\examples{
+plain <- charToRaw("hello, matrix")
+enc <- mxc_attachment_encrypt(plain)
+out <- mxc_attachment_decrypt(enc$data, enc$file)
+rawToChar(out)
+}

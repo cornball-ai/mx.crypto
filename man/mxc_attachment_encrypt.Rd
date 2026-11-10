@@ -18,3 +18,8 @@ The 64-bit counter starts at zero. The caller uploads only \code{data}
 and sends \code{file}, with the upload's \code{url} added, inside an
 encrypted room event. No HTTP or account state is used here.
 }
+\examples{
+enc <- mxc_attachment_encrypt(charToRaw("hello, matrix"))
+length(enc$data)
+enc$file$hashes$sha256
+}
