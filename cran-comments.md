@@ -31,7 +31,7 @@ MIT OR Apache-2.0, credited in `inst/AUTHORS`. The source tarball is
 * r-universe reusable build: Linux x86_64 and arm64, Windows x86_64
   and arm64, macOS arm64 and Intel, and Wasm, across R-release,
   R-devel, and R-oldrel
-* win-builder R-devel
+* win-builder R-release (R 4.6.2): Status: OK
 
 ## R CMD check --as-cran results
 
