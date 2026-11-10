@@ -41,13 +41,24 @@ check_install_log <- function(lines, darwin = identical(Sys.info()[["sysname"]],
         stop("Install log has no rustc version; the build did not run")
     }
     cat(grep("rustc --version:", lines, fixed = TRUE, value = TRUE)[1], "\n")
-    hits <- grep("(^|[^a-z])warning", lines, ignore.case = TRUE, value = TRUE)
-    ld_warning <- "^ld: warning: building for macOS-[0-9.]+, but linking with dylib '.+' which was built for newer version [0-9.]+$"
+    idx <- grep("(^|[^a-z])warning", lines, ignore.case = TRUE)
     if (darwin) {
-        hits <- hits[!grepl(ld_warning, hits)]
+        # Two macOS artifacts outside the package's control, excused only
+        # in their exact form. The runner's libR.dylib is newer than R's
+        # deployment target. And R CMD INSTALL reads symbol tables with
+        # Apple's nm, which exits 1 on rustc's compiler_builtins objects
+        # in librust.a; CRAN's M1mac log has the same R warning.
+        ld_warning <- "^ld: warning: building for macOS-[0-9.]+, but linking with dylib '.+' which was built for newer version [0-9.]+$"
+        nm_call <- "^In system\\(sprintf\\(\"%s -Pg %s\", nm, shQuote\\(f\\)\\)"
+        nm_status <- "^  running command ''.*nm' -Pg '.*/src/rust/librust\\.a'' had status 1$"
+        nm_warning <- lines[idx] == "Warning message:" &
+            grepl(nm_call, lines[pmin(idx + 1L, length(lines))]) &
+            grepl(nm_status, lines[pmin(idx + 2L, length(lines))])
+        idx <- idx[!(grepl(ld_warning, lines[idx]) | nm_warning)]
     }
-    if (length(hits)) {
-        stop(paste(c("Install log has warnings:", hits), collapse = "\n"))
+    if (length(idx)) {
+        shown <- sort(unique(pmin(c(idx, idx + 1L, idx + 2L), length(lines))))
+        stop(paste(c("Install log has warnings:", lines[shown]), collapse = "\n"))
     }
     cat("Install log: no warnings\n")
     invisible(TRUE)
