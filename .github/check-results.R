@@ -32,10 +32,43 @@ check_warnings <- function(lines, darwin = identical(Sys.info()[["sysname"]], "D
     invisible(TRUE)
 }
 
+# R CMD check reports an install-log warning only when it matches R's own
+# pattern list. CRAN's Fedora and M1mac machines flagged a cargo
+# future-incompatibility line in 0.3.0 that every stock check had passed,
+# so any warning in the install log fails here.
+check_install_log <- function(lines, darwin = identical(Sys.info()[["sysname"]], "Darwin")) {
+    if (!any(grepl("rustc --version:", lines, fixed = TRUE))) {
+        stop("Install log has no rustc version; the build did not run")
+    }
+    cat(grep("rustc --version:", lines, fixed = TRUE, value = TRUE)[1], "\n")
+    idx <- grep("(^|[^a-z])warning", lines, ignore.case = TRUE)
+    if (darwin) {
+        # Two macOS artifacts outside the package's control, excused only
+        # in their exact form. The runner's libR.dylib is newer than R's
+        # deployment target. And R CMD INSTALL reads symbol tables with
+        # Apple's nm, which exits 1 on rustc's compiler_builtins objects
+        # in librust.a; CRAN's M1mac log has the same R warning.
+        ld_warning <- "^ld: warning: building for macOS-[0-9.]+, but linking with dylib '.+' which was built for newer version [0-9.]+$"
+        nm_call <- "^In system\\(sprintf\\(\"%s -Pg %s\", nm, shQuote\\(f\\)\\)"
+        nm_status <- "^  running command ''.*nm' -Pg '.*/src/rust/librust\\.a'' had status 1$"
+        nm_warning <- lines[idx] == "Warning message:" &
+            grepl(nm_call, lines[pmin(idx + 1L, length(lines))]) &
+            grepl(nm_status, lines[pmin(idx + 2L, length(lines))])
+        idx <- idx[!(grepl(ld_warning, lines[idx]) | nm_warning)]
+    }
+    if (length(idx)) {
+        shown <- sort(unique(pmin(c(idx, idx + 1L, idx + 2L), length(lines))))
+        stop(paste(c("Install log has warnings:", lines[shown]), collapse = "\n"))
+    }
+    cat("Install log: no warnings\n")
+    invisible(TRUE)
+}
+
 check_results <- function() {
     pkg <- "mx.crypto"
     check_dir <- normalizePath(paste0(pkg, ".Rcheck"), mustWork = TRUE)
     check_warnings(readLines(file.path(check_dir, "00check.log"), warn = FALSE))
+    check_install_log(readLines(file.path(check_dir, "00install.out"), warn = FALSE))
     .libPaths(c(check_dir, .libPaths()))
     library(pkg, character.only = TRUE, lib.loc = check_dir)
     expected <- unname(read.dcf("DESCRIPTION")[1, "Version"])
