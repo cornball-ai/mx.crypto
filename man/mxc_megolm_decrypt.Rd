@@ -18,3 +18,11 @@ Named list: `plaintext` (raw) and `message_index` (integer).
 \description{
 Decrypt a room message
 }
+\examples{
+gs <- mxc_megolm_outbound_new()
+igs <- mxc_megolm_inbound_new(mxc_megolm_outbound_info(gs)$session_key)
+ct <- mxc_megolm_encrypt(gs, charToRaw("hello room"))
+dec <- mxc_megolm_decrypt(igs, ct)
+rawToChar(dec$plaintext)
+dec$message_index
+}

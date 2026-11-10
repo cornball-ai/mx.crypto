@@ -15,3 +15,7 @@ each recipient device, and [mxc_megolm_encrypt] to encrypt room
 messages. Rotate (create a new one) on membership changes or after
 your chosen number-of-messages / time threshold.
 }
+\examples{
+gs <- mxc_megolm_outbound_new()
+mxc_megolm_outbound_info(gs)$session_id
+}

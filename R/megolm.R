@@ -7,6 +7,9 @@
 #' your chosen number-of-messages / time threshold.
 #'
 #' @return An outbound GroupSession external pointer.
+#' @examples
+#' gs <- mxc_megolm_outbound_new()
+#' mxc_megolm_outbound_info(gs)$session_id
 #' @export
 mxc_megolm_outbound_new <- function() {
   .Call(.mxc_megolm_outbound_new)
@@ -20,6 +23,12 @@ mxc_megolm_outbound_new <- function() {
 #' @param gs An outbound GroupSession.
 #' @return Named list: `session_id` (str), `session_key` (str),
 #'   `message_index` (int).
+#' @examples
+#' gs <- mxc_megolm_outbound_new()
+#' info <- mxc_megolm_outbound_info(gs)
+#' info$message_index
+#' # Ship info$session_key to each recipient device in m.room_key
+#' igs <- mxc_megolm_inbound_new(info$session_key)
 #' @export
 mxc_megolm_outbound_info <- function(gs) {
   .Call(.mxc_megolm_outbound_info, gs)
@@ -31,6 +40,11 @@ mxc_megolm_outbound_info <- function(gs) {
 #' @param plaintext A `raw` vector. The caller is responsible for
 #'   producing the canonical JSON event body.
 #' @return Base64 ciphertext (the `ciphertext` field of `m.room.encrypted`).
+#' @examples
+#' gs <- mxc_megolm_outbound_new()
+#' igs <- mxc_megolm_inbound_new(mxc_megolm_outbound_info(gs)$session_key)
+#' ct <- mxc_megolm_encrypt(gs, charToRaw("hello room"))
+#' rawToChar(mxc_megolm_decrypt(igs, ct)$plaintext)
 #' @export
 mxc_megolm_encrypt <- function(gs, plaintext) {
   if (!is.raw(plaintext)) {
@@ -44,6 +58,11 @@ mxc_megolm_encrypt <- function(gs, plaintext) {
 #' @param gs An outbound GroupSession.
 #' @param key 32-byte raw vector.
 #' @return Base64 string.
+#' @examples
+#' key <- as.raw(1:32)
+#' gs <- mxc_megolm_outbound_new()
+#' blob <- mxc_megolm_outbound_pickle(gs, key)
+#' gs2 <- mxc_megolm_outbound_unpickle(blob, key)
 #' @export
 mxc_megolm_outbound_pickle <- function(gs, key) {
   if (!is.raw(key) || length(key) != 32L) {
@@ -57,6 +76,13 @@ mxc_megolm_outbound_pickle <- function(gs, key) {
 #' @param blob Base64 string.
 #' @param key 32-byte raw vector.
 #' @return An outbound GroupSession external pointer.
+#' @examples
+#' key <- as.raw(1:32)
+#' gs <- mxc_megolm_outbound_new()
+#' blob <- mxc_megolm_outbound_pickle(gs, key)
+#' gs2 <- mxc_megolm_outbound_unpickle(blob, key)
+#' identical(mxc_megolm_outbound_info(gs2)$session_id,
+#'           mxc_megolm_outbound_info(gs)$session_id)
 #' @export
 mxc_megolm_outbound_unpickle <- function(blob, key) {
   if (!is.raw(key) || length(key) != 32L) {
@@ -75,6 +101,11 @@ mxc_megolm_outbound_unpickle <- function(blob, key) {
 #'
 #' @param session_key Base64 session_key from `m.room_key`.
 #' @return An InboundGroupSession external pointer.
+#' @examples
+#' gs <- mxc_megolm_outbound_new()
+#' igs <- mxc_megolm_inbound_new(mxc_megolm_outbound_info(gs)$session_key)
+#' ct <- mxc_megolm_encrypt(gs, charToRaw("hello room"))
+#' mxc_megolm_decrypt(igs, ct)$message_index
 #' @export
 mxc_megolm_inbound_new <- function(session_key) {
   .Call(.mxc_megolm_inbound_new, as.character(session_key))
@@ -89,6 +120,12 @@ mxc_megolm_inbound_new <- function(session_key) {
 #'
 #' @param session_key Base64 exported session key.
 #' @return An InboundGroupSession external pointer.
+#' @examples
+#' gs <- mxc_megolm_outbound_new()
+#' igs <- mxc_megolm_inbound_new(mxc_megolm_outbound_info(gs)$session_key)
+#' fwd <- mxc_megolm_inbound_import(mxc_megolm_inbound_export(igs))
+#' ct <- mxc_megolm_encrypt(gs, charToRaw("hello room"))
+#' rawToChar(mxc_megolm_decrypt(fwd, ct)$plaintext)
 #' @export
 mxc_megolm_inbound_import <- function(session_key) {
   .Call(.mxc_megolm_inbound_import, as.character(session_key))
@@ -98,6 +135,10 @@ mxc_megolm_inbound_import <- function(session_key) {
 #'
 #' @param igs An InboundGroupSession.
 #' @return Named list with `session_id` and `first_known_index`.
+#' @examples
+#' gs <- mxc_megolm_outbound_new()
+#' igs <- mxc_megolm_inbound_new(mxc_megolm_outbound_info(gs)$session_key)
+#' mxc_megolm_inbound_info(igs)
 #' @export
 mxc_megolm_inbound_info <- function(igs) {
   .Call(.mxc_megolm_inbound_info, igs)
@@ -111,6 +152,12 @@ mxc_megolm_inbound_info <- function(igs) {
 #'
 #' @param igs An InboundGroupSession.
 #' @return Base64 exported session key.
+#' @examples
+#' gs <- mxc_megolm_outbound_new()
+#' igs <- mxc_megolm_inbound_new(mxc_megolm_outbound_info(gs)$session_key)
+#' exported <- mxc_megolm_inbound_export(igs)
+#' fwd <- mxc_megolm_inbound_import(exported)
+#' mxc_megolm_inbound_info(fwd)$session_id
 #' @export
 mxc_megolm_inbound_export <- function(igs) {
   .Call(.mxc_megolm_inbound_export, igs)
@@ -123,6 +170,13 @@ mxc_megolm_inbound_export <- function(igs) {
 #'   the `m.room.encrypted` event).
 #' @return Named list: `plaintext` (raw) and `message_index` (integer).
 #'   Use `message_index` to dedupe replays.
+#' @examples
+#' gs <- mxc_megolm_outbound_new()
+#' igs <- mxc_megolm_inbound_new(mxc_megolm_outbound_info(gs)$session_key)
+#' ct <- mxc_megolm_encrypt(gs, charToRaw("hello room"))
+#' dec <- mxc_megolm_decrypt(igs, ct)
+#' rawToChar(dec$plaintext)
+#' dec$message_index
 #' @export
 mxc_megolm_decrypt <- function(igs, ciphertext_b64) {
   .Call(.mxc_megolm_decrypt, igs, as.character(ciphertext_b64))
@@ -135,6 +189,12 @@ mxc_megolm_decrypt <- function(igs, ciphertext_b64) {
 #' @param igs An InboundGroupSession.
 #' @param key 32-byte raw vector.
 #' @return Base64 string.
+#' @examples
+#' key <- as.raw(1:32)
+#' gs <- mxc_megolm_outbound_new()
+#' igs <- mxc_megolm_inbound_new(mxc_megolm_outbound_info(gs)$session_key)
+#' blob <- mxc_megolm_inbound_pickle(igs, key)
+#' igs2 <- mxc_megolm_inbound_unpickle(blob, key)
 #' @export
 mxc_megolm_inbound_pickle <- function(igs, key) {
   if (!is.raw(key) || length(key) != 32L) {
@@ -148,6 +208,13 @@ mxc_megolm_inbound_pickle <- function(igs, key) {
 #' @param blob Base64 string.
 #' @param key 32-byte raw vector.
 #' @return An InboundGroupSession external pointer.
+#' @examples
+#' key <- as.raw(1:32)
+#' gs <- mxc_megolm_outbound_new()
+#' igs <- mxc_megolm_inbound_new(mxc_megolm_outbound_info(gs)$session_key)
+#' igs2 <- mxc_megolm_inbound_unpickle(mxc_megolm_inbound_pickle(igs, key), key)
+#' ct <- mxc_megolm_encrypt(gs, charToRaw("after restart"))
+#' rawToChar(mxc_megolm_decrypt(igs2, ct)$plaintext)
 #' @export
 mxc_megolm_inbound_unpickle <- function(blob, key) {
   if (!is.raw(key) || length(key) != 32L) {

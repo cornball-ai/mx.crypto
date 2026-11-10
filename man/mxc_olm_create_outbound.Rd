@@ -20,3 +20,11 @@ Use a peer's published curve25519 identity key + one of their signed
 one-time keys to bootstrap a 1:1 ratchet. The first ciphertext from
 this session is a pre-key message (`type = 0`).
 }
+\examples{
+alice <- mxc_account_new()
+bob <- mxc_account_new()
+mxc_account_generate_one_time_keys(bob, 1L)
+bob_key <- mxc_account_identity_keys(bob)$curve25519
+bob_otk <- mxc_account_one_time_keys(bob)[[1]]
+sess <- mxc_olm_create_outbound(alice, bob_key, bob_otk)
+}

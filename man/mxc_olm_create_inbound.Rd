@@ -20,3 +20,15 @@ Consumes the matching one-time key from the local Account. The result
 has the new Session and the decrypted plaintext of the pre-key
 message; subsequent messages on this session use [mxc_olm_decrypt].
 }
+\examples{
+alice <- mxc_account_new()
+bob <- mxc_account_new()
+mxc_account_generate_one_time_keys(bob, 1L)
+sess_a <- mxc_olm_create_outbound(alice,
+  mxc_account_identity_keys(bob)$curve25519,
+  mxc_account_one_time_keys(bob)[[1]])
+msg <- mxc_olm_encrypt(sess_a, charToRaw("hello bob"))
+res <- mxc_olm_create_inbound(bob,
+  mxc_account_identity_keys(alice)$curve25519, msg$body)
+rawToChar(res$plaintext)
+}

@@ -5,12 +5,18 @@
 #' transaction and handle. Protocol negotiation, commitments, user prompts,
 #' timeouts, and cross-signing policy belong to mx.client.
 #' @return An opaque SAS handle.
+#' @examples
+#' sas <- mxc_sas_new()
+#' mxc_sas_public(sas)
 #' @export
 mxc_sas_new <- function() .Call(.sas__mxc_sas_new)
 
 #' Read a SAS ephemeral public key
 #' @param sas An opaque SAS handle.
 #' @return An unpadded base64 Curve25519 public key.
+#' @examples
+#' sas <- mxc_sas_new()
+#' nchar(mxc_sas_public(sas))
 #' @export
 mxc_sas_public <- function(sas) .Call(.sas__mxc_sas_public, sas)
 
@@ -21,6 +27,11 @@ mxc_sas_public <- function(sas) .Call(.sas__mxc_sas_public, sas)
 #' @param sas An opaque SAS handle, modified in place.
 #' @param peer_key The peer's unpadded base64 ephemeral public key.
 #' @return Invisibly NULL.
+#' @examples
+#' alice <- mxc_sas_new()
+#' bob <- mxc_sas_new()
+#' mxc_sas_establish(alice, mxc_sas_public(bob))
+#' mxc_sas_establish(bob, mxc_sas_public(alice))
 #' @export
 mxc_sas_establish <- function(sas, peer_key) {
     .Call(.sas__mxc_sas_establish, sas, peer_key)
@@ -31,6 +42,13 @@ mxc_sas_establish <- function(sas, peer_key) {
 #' @param sas An established SAS handle.
 #' @param info The protocol's ordered SAS context string.
 #' @return A raw vector of length six, for decimal or emoji presentation.
+#' @examples
+#' alice <- mxc_sas_new()
+#' bob <- mxc_sas_new()
+#' mxc_sas_establish(alice, mxc_sas_public(bob))
+#' mxc_sas_establish(bob, mxc_sas_public(alice))
+#' info <- "MATRIX_KEY_VERIFICATION_SAS|example"
+#' identical(mxc_sas_bytes(alice, info), mxc_sas_bytes(bob, info))
 #' @export
 mxc_sas_bytes <- function(sas, info) .Call(.sas__mxc_sas_bytes, sas, info)
 
@@ -39,6 +57,12 @@ mxc_sas_bytes <- function(sas, info) .Call(.sas__mxc_sas_bytes, sas, info)
 #' @param input Public key or sorted key-id list to authenticate.
 #' @param info The protocol's direction-specific MAC context string.
 #' @return An unpadded base64 HMAC-SHA-256 tag for hkdf-hmac-sha256.v2.
+#' @examples
+#' alice <- mxc_sas_new()
+#' bob <- mxc_sas_new()
+#' mxc_sas_establish(alice, mxc_sas_public(bob))
+#' mxc_sas_establish(bob, mxc_sas_public(alice))
+#' mxc_sas_mac(alice, "ed25519:DEVICEID", "MATRIX_KEY_VERIFICATION_MAC|example")
 #' @export
 mxc_sas_mac <- function(sas, input, info) {
     .Call(.sas__mxc_sas_mac, sas, input, info)
@@ -53,6 +77,15 @@ mxc_sas_mac <- function(sas, input, info) {
 #' @param info The protocol's direction-specific MAC context string.
 #' @param mac Unpadded base64 HMAC-SHA-256 tag.
 #' @return TRUE for a matching tag, otherwise FALSE.
+#' @examples
+#' alice <- mxc_sas_new()
+#' bob <- mxc_sas_new()
+#' mxc_sas_establish(alice, mxc_sas_public(bob))
+#' mxc_sas_establish(bob, mxc_sas_public(alice))
+#' info <- "MATRIX_KEY_VERIFICATION_MAC|example"
+#' mac <- mxc_sas_mac(alice, "ed25519:DEVICEID", info)
+#' mxc_sas_verify_mac(bob, "ed25519:DEVICEID", info, mac)
+#' mxc_sas_verify_mac(bob, "ed25519:OTHER", info, mac)
 #' @export
 mxc_sas_verify_mac <- function(sas, input, info, mac) {
     .Call(.sas__mxc_sas_verify_mac, sas, input, info, mac)
@@ -66,6 +99,9 @@ mxc_sas_verify_mac <- function(sas, input, info, mac) {
 #' @param public_key Unpadded base64 ephemeral Curve25519 public key.
 #' @param canonical_start Canonical JSON of the complete start content.
 #' @return The unpadded base64 SHA-256 commitment.
+#' @examples
+#' sas <- mxc_sas_new()
+#' mxc_sas_commitment(mxc_sas_public(sas), '{"method":"m.sas.v1"}')
 #' @export
 mxc_sas_commitment <- function(public_key, canonical_start) {
     .Call(.sas__mxc_sas_commitment, enc2utf8(public_key), enc2utf8(canonical_start))

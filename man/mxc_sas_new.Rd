@@ -14,3 +14,7 @@ cannot be saved or restored; restart interrupted verification with a new
 transaction and handle. Protocol negotiation, commitments, user prompts,
 timeouts, and cross-signing policy belong to mx.client.
 }
+\examples{
+sas <- mxc_sas_new()
+mxc_sas_public(sas)
+}

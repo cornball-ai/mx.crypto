@@ -3,8 +3,13 @@
 \alias{mxc_verify_one_time_key}
 \title{Verify a signed one-time / fallback key}
 \usage{
-mxc_verify_one_time_key(algorithm_key_id, key_object, signing_ed25519,
-                        expected_user_id, expected_device_id)
+mxc_verify_one_time_key(
+  algorithm_key_id,
+  key_object,
+  signing_ed25519,
+  expected_user_id,
+  expected_device_id
+)
 }
 \arguments{
 \item{algorithm_key_id}{Character. The outer map key from the
@@ -35,11 +40,14 @@ block of \code{/keys/upload}). The signing ed25519 key must come
 from a previously verified \code{device_keys} object —
 \emph{this function does not look it up for you}, because doing so
 would silently re-trust whatever the homeserver hands back.
+}
+\details{
 The caller must pass the outer map key (\code{"<algorithm>:<key_id>"})
 alongside the inner key object so the helper can reject anything but
 \code{signed_curve25519}. The helper also confirms the \code{key}
 value decodes to a 32-byte curve25519 public key; a signature over
 garbage bytes is not a useful "verified" result.
+
 }
 \examples{
 \dontrun{

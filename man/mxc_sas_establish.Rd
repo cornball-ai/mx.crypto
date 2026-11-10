@@ -17,3 +17,9 @@ Invisibly NULL.
 Consumes the handle's ephemeral secret exactly once. A low-order peer key
 is rejected and consumes the handle. No shared secret is returned to R.
 }
+\examples{
+alice <- mxc_sas_new()
+bob <- mxc_sas_new()
+mxc_sas_establish(alice, mxc_sas_public(bob))
+mxc_sas_establish(bob, mxc_sas_public(alice))
+}

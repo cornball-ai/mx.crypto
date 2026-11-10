@@ -16,3 +16,10 @@ An opaque signing-key handle.
 \description{
 Restore an encrypted signing key pickle
 }
+\examples{
+sk <- mxc_signing_key_new()
+pickle_key <- as.raw(1:32)
+blob <- mxc_signing_key_pickle(sk, pickle_key)
+restored <- mxc_signing_key_unpickle(blob, pickle_key)
+identical(mxc_signing_key_public(restored), mxc_signing_key_public(sk))
+}

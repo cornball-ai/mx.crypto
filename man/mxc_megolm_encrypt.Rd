@@ -17,3 +17,9 @@ Base64 ciphertext (the `ciphertext` field of `m.room.encrypted`).
 \description{
 Encrypt a room message
 }
+\examples{
+gs <- mxc_megolm_outbound_new()
+igs <- mxc_megolm_inbound_new(mxc_megolm_outbound_info(gs)$session_key)
+ct <- mxc_megolm_encrypt(gs, charToRaw("hello room"))
+rawToChar(mxc_megolm_decrypt(igs, ct)$plaintext)
+}

@@ -16,3 +16,10 @@ Call after the homeserver has accepted a `/keys/upload` containing
 the keys returned by [mxc_account_one_time_keys]. Future calls to
 that function will not re-include them.
 }
+\examples{
+acct <- mxc_account_new()
+mxc_account_generate_one_time_keys(acct, 3L)
+length(mxc_account_one_time_keys(acct))
+mxc_account_mark_published(acct)
+length(mxc_account_one_time_keys(acct))
+}

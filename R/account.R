@@ -89,6 +89,12 @@ mxc_account_one_time_keys <- function(account) {
 #'
 #' @param account An Account.
 #' @return Invisible NULL; mutates `account`.
+#' @examples
+#' acct <- mxc_account_new()
+#' mxc_account_generate_one_time_keys(acct, 3L)
+#' length(mxc_account_one_time_keys(acct))
+#' mxc_account_mark_published(acct)
+#' length(mxc_account_one_time_keys(acct))
 #' @export
 mxc_account_mark_published <- function(account) {
   invisible(.Call(.mxc_account_mark_published, account))
@@ -102,6 +108,10 @@ mxc_account_mark_published <- function(account) {
 #'
 #' @param account An Account.
 #' @return Named list with `key_id` and `curve25519` (both base64).
+#' @examples
+#' acct <- mxc_account_new()
+#' fk <- mxc_account_fallback_key(acct)
+#' fk$curve25519
 #' @export
 mxc_account_fallback_key <- function(account) {
   .Call(.mxc_account_fallback_key, account)
@@ -118,6 +128,11 @@ mxc_account_fallback_key <- function(account) {
 #' @param key A `raw` vector of length 32. The caller is responsible for
 #'   key derivation; use a KDF on a passphrase, do not pass a passphrase.
 #' @return Base64 string containing the encrypted pickle.
+#' @examples
+#' acct <- mxc_account_new()
+#' key <- as.raw(1:32)
+#' blob <- mxc_account_pickle(acct, key)
+#' nchar(blob)
 #' @export
 mxc_account_pickle <- function(account, key) {
   if (!is.raw(key) || length(key) != 32L) {
@@ -131,6 +146,12 @@ mxc_account_pickle <- function(account, key) {
 #' @param blob A base64 string produced by [mxc_account_pickle].
 #' @param key The 32-byte key the pickle was encrypted under.
 #' @return An Account external pointer.
+#' @examples
+#' acct <- mxc_account_new()
+#' key <- as.raw(1:32)
+#' blob <- mxc_account_pickle(acct, key)
+#' restored <- mxc_account_unpickle(blob, key)
+#' identical(mxc_account_identity_keys(restored), mxc_account_identity_keys(acct))
 #' @export
 mxc_account_unpickle <- function(blob, key) {
   if (!is.raw(key) || length(key) != 32L) {

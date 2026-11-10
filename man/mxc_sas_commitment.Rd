@@ -18,3 +18,7 @@ Computes SHA-256 over the concatenated UTF-8 strings and returns unpadded
 base64. The caller must canonicalize the complete start content first.
 This function does not parse JSON or implement protocol policy.
 }
+\examples{
+sas <- mxc_sas_new()
+mxc_sas_commitment(mxc_sas_public(sas), '{"method":"m.sas.v1"}')
+}

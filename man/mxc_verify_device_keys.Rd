@@ -3,8 +3,12 @@
 \alias{mxc_verify_device_keys}
 \title{Verify a Matrix device-keys object}
 \usage{
-mxc_verify_device_keys(device_keys, expected_user_id, expected_device_id,
-                       required_algorithms = NULL)
+mxc_verify_device_keys(
+  device_keys,
+  expected_user_id,
+  expected_device_id,
+  required_algorithms = NULL
+)
 }
 \arguments{
 \item{device_keys}{Named list. The \code{device_keys} object,
@@ -35,15 +39,19 @@ fields (user_id, device_id, algorithms, keys, signatures) are
 present and match the expected identity, then verifies the
 ed25519 self-signature over the canonical-JSON byte sequence
 (with \code{signatures} and \code{unsigned} stripped).
+}
+\details{
 Any of the following raises an error rather than returning
 \code{FALSE}: missing field, wrong \code{user_id} or
 \code{device_id}, missing curve25519 / ed25519 key, missing
 signatures block, signature under the wrong user or device,
 invalid signature, malformed base64.
+
 This function deliberately accepts \emph{any} ed25519 key the
 object claims for itself; it does not pin against a previously
 trusted key. Identity pinning is the caller's responsibility
 (typically TOFU + cross-signing).
+
 }
 \examples{
 \dontrun{

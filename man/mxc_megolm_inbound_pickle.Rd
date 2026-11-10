@@ -16,3 +16,10 @@ Base64 string.
 \description{
 Pickle after every decrypt so the ratchet state survives restart.
 }
+\examples{
+key <- as.raw(1:32)
+gs <- mxc_megolm_outbound_new()
+igs <- mxc_megolm_inbound_new(mxc_megolm_outbound_info(gs)$session_key)
+blob <- mxc_megolm_inbound_pickle(igs, key)
+igs2 <- mxc_megolm_inbound_unpickle(blob, key)
+}

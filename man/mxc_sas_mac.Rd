@@ -18,3 +18,10 @@ An unpadded base64 HMAC-SHA-256 tag for hkdf-hmac-sha256.v2.
 \description{
 Authenticate a Matrix SAS key or key-id list
 }
+\examples{
+alice <- mxc_sas_new()
+bob <- mxc_sas_new()
+mxc_sas_establish(alice, mxc_sas_public(bob))
+mxc_sas_establish(bob, mxc_sas_public(alice))
+mxc_sas_mac(alice, "ed25519:DEVICEID", "MATRIX_KEY_VERIFICATION_MAC|example")
+}

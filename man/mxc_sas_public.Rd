@@ -14,3 +14,7 @@ An unpadded base64 Curve25519 public key.
 \description{
 Read a SAS ephemeral public key
 }
+\examples{
+sas <- mxc_sas_new()
+nchar(mxc_sas_public(sas))
+}

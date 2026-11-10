@@ -16,3 +16,9 @@ Base64 string.
 \description{
 Pickle an outbound group session
 }
+\examples{
+key <- as.raw(1:32)
+gs <- mxc_megolm_outbound_new()
+blob <- mxc_megolm_outbound_pickle(gs, key)
+gs2 <- mxc_megolm_outbound_unpickle(blob, key)
+}

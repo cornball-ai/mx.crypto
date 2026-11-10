@@ -18,3 +18,9 @@ Uses the same vodozemac pickle encryption as an Olm account. Although the
 carrier also contains an unused Curve25519 identity, only the Ed25519 key
 is part of the signing-key contract.
 }
+\examples{
+sk <- mxc_signing_key_new()
+pickle_key <- as.raw(1:32)
+blob <- mxc_signing_key_pickle(sk, pickle_key)
+nchar(blob)
+}
