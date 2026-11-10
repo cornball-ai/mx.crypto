@@ -1,3 +1,9 @@
+# mx.crypto 0.3.0
+
+* Release the Matrix v2 attachment encryption added in development version
+  0.2.2.2 and the unpadded base64 fix for Olm message bodies from 0.2.2.1.
+  No code changes since 0.2.2.2.
+
 # mx.crypto 0.2.2.2
 
 * Add Matrix v2 attachment encryption with fresh AES-256-CTR keys and
