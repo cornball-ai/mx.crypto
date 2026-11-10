@@ -9,10 +9,16 @@ env:
 jobs:
   ci:
     strategy:
+      fail-fast: false
       matrix:
+        # rust: stable is what CRAN's machines track (Fedora and M1mac ran
+        # 1.99.1 when 0.3.0 was published); a compiler pinned to the MSRV
+        # cannot print a warning a newer one introduced. rust: 1.85 proves
+        # the SystemRequirements floor.
         include:
-          - {os: macos-latest}
-          - {os: ubuntu-latest}
+          - {os: macos-latest, rust: stable}
+          - {os: ubuntu-latest, rust: stable}
+          - {os: ubuntu-latest, rust: "1.85"}
 
     runs-on: ${{ matrix.os }}
 
@@ -30,7 +36,7 @@ jobs:
 
       - name: Install Rust toolchain
         run: |
-          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.85 --profile minimal
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain ${{ matrix.rust }} --profile minimal
           echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
 
       - name: Dependencies

@@ -32,10 +32,32 @@ check_warnings <- function(lines, darwin = identical(Sys.info()[["sysname"]], "D
     invisible(TRUE)
 }
 
+# R CMD check reports an install-log warning only when it matches R's own
+# pattern list. CRAN's Fedora and M1mac machines flagged a cargo
+# future-incompatibility line in 0.3.0 that every stock check had passed,
+# so any warning in the install log fails here.
+check_install_log <- function(lines, darwin = identical(Sys.info()[["sysname"]], "Darwin")) {
+    if (!any(grepl("rustc --version:", lines, fixed = TRUE))) {
+        stop("Install log has no rustc version; the build did not run")
+    }
+    cat(grep("rustc --version:", lines, fixed = TRUE, value = TRUE)[1], "\n")
+    hits <- grep("(^|[^a-z])warning", lines, ignore.case = TRUE, value = TRUE)
+    ld_warning <- "^ld: warning: building for macOS-[0-9.]+, but linking with dylib '.+' which was built for newer version [0-9.]+$"
+    if (darwin) {
+        hits <- hits[!grepl(ld_warning, hits)]
+    }
+    if (length(hits)) {
+        stop(paste(c("Install log has warnings:", hits), collapse = "\n"))
+    }
+    cat("Install log: no warnings\n")
+    invisible(TRUE)
+}
+
 check_results <- function() {
     pkg <- "mx.crypto"
     check_dir <- normalizePath(paste0(pkg, ".Rcheck"), mustWork = TRUE)
     check_warnings(readLines(file.path(check_dir, "00check.log"), warn = FALSE))
+    check_install_log(readLines(file.path(check_dir, "00install.out"), warn = FALSE))
     .libPaths(c(check_dir, .libPaths()))
     library(pkg, character.only = TRUE, lib.loc = check_dir)
     expected <- unname(read.dcf("DESCRIPTION")[1, "Version"])
