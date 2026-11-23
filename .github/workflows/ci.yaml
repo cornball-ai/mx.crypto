@@ -82,7 +82,9 @@ jobs:
           rustc --version
 
       - name: Dependencies
-        run: Rscript -e 'install.packages(c("tinytest", "simplermarkdown"))'
+        run: |
+          Rscript -e 'install.packages(c("tinytest", "simplermarkdown"),
+            repos = "https://cloud.r-project.org")'
 
       - name: Test
         run: |
