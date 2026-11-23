@@ -1,3 +1,10 @@
+# mx.crypto 0.3.1
+
+* Release the CRAN check fixes from development versions 0.3.0.1 (drop
+  'proc-macro-error2' from the vendored crates) and 0.3.0.2 (link
+  `-lsynchronization` on Windows for rustc 1.100). No code changes since
+  0.3.0.2.
+
 # mx.crypto 0.3.0.2
 
 * Fix: link the Windows build against `-lsynchronization`. From rustc
