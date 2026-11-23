@@ -82,9 +82,10 @@ jobs:
           rustc --version
 
       - name: Dependencies
+        # One line: Windows Rscript splits a multi-line -e string.
         run: |
-          Rscript -e 'install.packages(c("tinytest", "simplermarkdown"),
-            repos = "https://cloud.r-project.org")'
+          Rscript -e 'options(repos = "https://cloud.r-project.org")' \
+            -e 'install.packages(c("tinytest", "simplermarkdown"))'
 
       - name: Test
         run: |
