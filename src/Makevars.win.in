@@ -10,7 +10,9 @@ CARGO_ENV = @CARGO_ENV@
 
 @RUST_DEPS@
 
-PKG_LIBS = $(RUST_LIB) -lws2_32 -ladvapi32 -luserenv -lbcrypt -lntdll
+# Rust 1.100 std calls WaitOnAddress and WakeByAddress*, which live in
+# synchronization; without it the Rtools link fails.
+PKG_LIBS = $(RUST_LIB) -lws2_32 -ladvapi32 -luserenv -lbcrypt -lntdll -lsynchronization
 
 all: $(SHLIB)
 

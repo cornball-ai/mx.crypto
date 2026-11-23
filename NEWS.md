@@ -1,3 +1,11 @@
+# mx.crypto 0.3.0.2
+
+* Fix: link the Windows build against `-lsynchronization`. From rustc
+  1.100.0 the Rust standard library calls `WaitOnAddress` and
+  `WakeByAddressSingle`/`WakeByAddressAll`, so the Rtools link failed on
+  every Windows build with the newest stable Rust. No R code or API
+  changes.
+
 # mx.crypto 0.3.0.1
 
 * Fix: update the bundled 'matrix-pickle' and 'matrix-pickle-derive' crates
