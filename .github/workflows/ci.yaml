@@ -56,3 +56,38 @@ jobs:
 
       - name: Check warnings and SAS coverage
         run: Rscript .github/check-results.R
+
+  windows:
+    # r-ci bootstraps Linux and macOS only. This leg links librust.a with
+    # Rtools against the newest stable rustc, which is how 0.3.0.1 broke:
+    # rustc 1.100 std needs -lsynchronization.
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: release
+          rtools-version: ""
+
+      - name: Install Rust toolchain
+        run: |
+          rustup update stable
+          rustup default stable
+          rustup target add x86_64-pc-windows-gnu
+          rustc --version
+
+      - name: Dependencies
+        run: Rscript -e 'install.packages(c("tinytest", "simplermarkdown"))'
+
+      - name: Test
+        run: |
+          R CMD build --no-manual .
+          R CMD check --no-manual --as-cran mx.crypto_*.tar.gz
+
+      - name: Check warnings and SAS coverage
+        run: Rscript .github/check-results.R

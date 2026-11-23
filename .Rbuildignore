@@ -1,6 +1,7 @@
 ^\.Rproj\.user$
 ^.*\.Rproj$
 ^\.claude$
+^\.corteza$
 ^CLAUDE\.md$
 ^SECURITY\.md$
 ^\.git$
