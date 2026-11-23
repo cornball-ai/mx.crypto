@@ -2,36 +2,33 @@
 
 ## Submission summary
 
-Minor release, 0.2.2 -> 0.3.0. It adds two exports and fixes one bug.
-No export was removed or renamed and no existing signature changed.
+Patch release, 0.3.0 -> 0.3.1, in response to the CRAN check problems
+on 0.3.0 (deadline 2026-12-01). Both changes are to the build only.
+No R code, export, or signature changed.
 
-* New: `mxc_attachment_encrypt()` and `mxc_attachment_decrypt()`
-  implement Matrix v2 attachment encryption (AES-256-CTR with a fresh
-  key and nonce per file, SHA-256 verified before decryption). Both are
-  pure functions over raw vectors; they perform no HTTP requests and
-  write no files.
-* Fix: `mxc_olm_create_inbound()` and `mxc_olm_decrypt()` rejected Olm
-  message bodies encoded as unpadded base64, which is what current
-  Matrix clients built on 'vodozemac' send. Both now accept padded and
-  unpadded bodies.
-
-## Bundled Rust crates
-
-`src/rust/Cargo.toml` now names `aes` 0.8.4, `ctr` 0.9.2, and `rand`
-0.8 as direct dependencies. `aes` and `rand` were already vendored as
-dependencies of 'vodozemac'. `ctr` 0.9.2 is the one crate new to
-`src/rust/vendor.tar.xz`; it is a RustCrypto crate under
-MIT OR Apache-2.0, credited in `inst/AUTHORS`. The source tarball is
-5.7 MB, about the size of 0.2.2.
+* Fix: the r-devel Linux, Fedora, and M1mac checks reported that the
+  vendored 'proc-macro-error2' 2.0.1 "contains code that will be
+  rejected by a future version of Rust". The bundled 'matrix-pickle'
+  and 'matrix-pickle-derive' crates move from 0.2.2 to 0.2.3, which no
+  longer depend on it. 'proc-macro-error2' and 'proc-macro-error-attr2'
+  are gone from `src/rust/vendor.tar.xz` and `Cargo.lock`.
+* Fix: from rustc 1.100.0 the Rust standard library on Windows calls
+  `WaitOnAddress` and `WakeByAddressSingle`/`WakeByAddressAll`.
+  `src/Makevars.win` now links `-lsynchronization`; without it the
+  Rtools link fails on the newest stable Rust.
 
 ## Test environments
 
-* local: Ubuntu 24.04, R 4.6.1, rustc 1.97.1
-* GitHub Actions (ubuntu-latest, macos-latest) via r-ci, R-release
-* r-universe reusable build: Linux x86_64 and arm64, Windows x86_64
-  and arm64, macOS arm64 and Intel, and Wasm, across R-release,
-  R-devel, and R-oldrel
-* win-builder R-release (R 4.6.2): Status: OK
+* local: Ubuntu 24.04, R 4.6.1, rustc 1.97.1, `R CMD check --as-cran`
+  including the PDF manual
+* local: the vendored crates built with rustc 1.100.0-nightly;
+  `cargo report future-incompatibilities` reports nothing
+* GitHub Actions: macOS and Ubuntu on stable rustc, Ubuntu on rustc
+  1.85 (the MSRV), and Windows (Rtools 4.5) on rustc 1.100.0. Each leg
+  fails on any warning in the install log, not only the ones
+  R CMD check reports.
+* r-universe: Linux x86_64 and arm64, Windows x86_64 and arm64, macOS
+  arm64 and Intel, and Wasm, across R-release, R-devel, and R-oldrel
 
 ## R CMD check --as-cran results
 
@@ -48,35 +45,25 @@ Compilation used the following non-portable flag(s):
 ```
 
 Emitted by `rustc`'s release profile and outside the package's control.
-This is the same NOTE 0.2.0 through 0.2.2 were accepted with, and the
-same one other Rust-using CRAN packages (e.g. `salso`) carry. The other
-flags that appear in this NOTE on some hosts (`-Wdate-time`,
-`-Werror=format-security`, `-Wformat`) are R's own Debian-style
-hardening defaults passing through unchanged.
+This is the same NOTE 0.2.0 through 0.3.0 were accepted with, and the
+same one other Rust-using CRAN packages (e.g. `salso`) carry.
 
 ## Reverse dependencies
 
 Three CRAN packages list 'mx.crypto' in Suggests: 'mx.client',
-'chat.api', and 'corteza'. I maintain all three. I checked the CRAN
-source of each against 0.3.0:
-
-* 'mx.client' 0.2.1: OK
-* 'chat.api' 0.1.0: OK
-* 'corteza' 0.7.1: 2562 of 2563 tests pass. The one failure
-  (`test_cli_helpers.R`, a default model name) occurs identically on
-  my machine with 'mx.crypto' 0.2.2.2 installed, and 'corteza' makes no
-  calls to 'mx.crypto'.
+'chat.api', and 'corteza'. I maintain all three. This release changes
+no R code, so their behaviour against 'mx.crypto' is unchanged from
+0.3.0.
 
 ## SystemRequirements
 
-Unchanged: `Cargo (Rust's package manager), rustc (>= 1.85)`. The MSRV
-matches `vodozemac`'s upstream `rust-version`. `tools/configure.R`
-checks the rustc version before invoking cargo and fails fast with a
-clear message if MSRV is unmet.
+Unchanged: `Cargo (Rust's package manager), rustc (>= 1.85)`.
+`tools/configure.R` checks the rustc version before invoking cargo and
+fails fast with a clear message if the minimum is unmet.
 
 ## Build behaviour
 
-Unchanged from 0.2.2:
+Unchanged from 0.3.0:
 
 * `tools/configure.R` extracts `src/rust/vendor.tar.xz` to
   `src/rust/vendor/`, writes `src/rust/.cargo/config.toml` (capped at
@@ -89,7 +76,7 @@ Unchanged from 0.2.2:
 
 ## Licensing
 
-Unchanged from 0.2.2. The bundled `vodozemac` crate is Apache-2.0;
+Unchanged from 0.3.0. The bundled `vodozemac` crate is Apache-2.0;
 attribution is in `inst/AUTHORS` and `inst/NOTICE`. The R package is
 dual-licensed `MIT + file LICENSE | Apache License 2.0`. `Authors@R`
 credits `cornball.ai` (cph), `The Matrix.org Foundation C.I.C.`
