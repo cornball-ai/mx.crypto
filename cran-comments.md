@@ -29,9 +29,9 @@ No R code, export, or signature changed.
   R CMD check reports.
 * r-universe: Linux x86_64 and arm64, Windows x86_64 and arm64, macOS
   arm64 and Intel, and Wasm, across R-release, R-devel, and R-oldrel
-* win-builder R-devel (2026-11-17 r90926 ucrt, rustc 1.92.0): Status: OK.
-  This ran on 0.3.0.2, whose sources match 0.3.1; only DESCRIPTION,
-  NEWS.md, and this file changed since.
+* win-builder R-devel (2026-11-17 r90926 ucrt) and R-release (4.6.2),
+  both rustc 1.92.0: Status: OK. These ran on 0.3.0.2, whose sources
+  match 0.3.1; only DESCRIPTION, NEWS.md, and this file changed since.
 
 ## R CMD check --as-cran results
 
